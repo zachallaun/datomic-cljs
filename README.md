@@ -7,7 +7,7 @@ What is this; Clojure?
 ```clj
 (ns sweet-node-cljs-app
   (:require [datomic-cljs.api :as d]
-            [cljs.core.async :as async])
+            [cljs.core.async :as async :refer [<!]])
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
 ;; Assuming I have a Datomic REST service running locally on port 9898, with
