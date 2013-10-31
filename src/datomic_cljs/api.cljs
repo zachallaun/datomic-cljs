@@ -10,24 +10,24 @@
 (defprotocol IQueryDatomic
   (execute-query! [db query-str inputs]))
 
-(defrecord DatomicConnection [hostname port alias dbname])
+(defrecord DatomicConnection [hostname port db-alias])
 
-(def
-  ^{:doc "Create an abstract connection to a Datomic REST service by passing
-    the following arguments:
+(defn connect
+  "Create an abstract connection to a Datomic REST service by passing
+   the following arguments:
 
-      hostname, e.g. localhost;
-      port, the port on which the REST service is listening;
-      alias, the transactor alias;
-      dbname, the name of the database being connected to."}
-  connect
-  ->DatomicConnection)
+     hostname, e.g. localhost;
+     port, the port on which the REST service is listening;
+     alias, the transactor alias;
+     dbname, the name of the database being connected to."
+  [hostname port alias dbname]
+  (->DatomicConnection hostname port (str alias "/" dbname)))
 
 (defrecord DatomicNow [connection]
   IQueryDatomic
-  (execute-query! [{{:keys [hostname port alias dbname]} :connection} q-str inputs]
+  (execute-query! [{{:keys [hostname port db-alias]} :connection} q-str inputs]
     (let [c-query (async/chan)
-          args-str (-> {:db/alias (str alias "/" dbname)}
+          args-str (-> {:db/alias db-alias}
                        (cons inputs)
                        (vec)
                        (prn-str))
