@@ -7,22 +7,21 @@
 
 (def js-url (nodejs/require "url"))
 
-(defn connect
-  "Create an abstract connection to a Datomic REST service by passing
-   the following arguments:
-
-     hostname, e.g. localhost;
-     port, the port on which the REST service is listening;
-     alias, the transactor alias;
-     dbname, the name of the database being connected to."
-  [hostname port alias dbname]
-  {:hostname hostname
-   :port port
-   :alias alias
-   :dbname dbname})
-
 (defprotocol IQueryDatomic
   (execute-query! [db query-str]))
+
+(defrecord DatomicConnection [hostname port alias dbname])
+
+(def
+  ^{:doc "Create an abstract connection to a Datomic REST service by passing
+    the following arguments:
+
+      hostname, e.g. localhost;
+      port, the port on which the REST service is listening;
+      alias, the transactor alias;
+      dbname, the name of the database being connected to."}
+  connect
+  ->DatomicConnection)
 
 (defrecord DatomicNow [connection]
   IQueryDatomic
