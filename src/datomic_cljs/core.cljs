@@ -21,7 +21,10 @@
 (defn -main [& args]
   (let [conn (d/connect "localhost" 9898 "db" "seattle")]
     (go
-      (println (<! (d/q '[:find ?e ?v :in $ :where [?e :db/doc ?v]] (d/db conn)))))))
+      (println
+       (ffirst
+        (<! (d/q '[:find ?eid :in $ ?n :where [?eid :community/name ?n]]
+                 (d/db conn) "Capitol Hill Triangle")))))))
 
 (set! *main-cli-fn* -main)
 

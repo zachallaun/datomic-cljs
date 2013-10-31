@@ -8,7 +8,7 @@
 (def js-url (nodejs/require "url"))
 
 (defprotocol IQueryDatomic
-  (execute-query! [db query-str]))
+  (execute-query! [db query-str inputs]))
 
 (defrecord DatomicConnection [hostname port alias dbname])
 
@@ -25,9 +25,12 @@
 
 (defrecord DatomicNow [connection]
   IQueryDatomic
-  (execute-query! [{{:keys [hostname port alias dbname]} :connection} q-str]
+  (execute-query! [{{:keys [hostname port alias dbname]} :connection} q-str inputs]
     (let [c-query (async/chan)
-          args-str (prn-str [{:db/alias (str alias "/" dbname)}])
+          args-str (-> {:db/alias (str alias "/" dbname)}
+                       (cons inputs)
+                       (vec)
+                       (prn-str))
           encoded-q-str (->> {:query {:q q-str :args args-str}}
                              (clj->js)
                              (.format js-url))
@@ -59,8 +62,8 @@
   "Execute a query against a database value with inputs. A core.async
    channel will be returned which will ultimately contain the result of
    the query, and will be closed when the query is complete."
-  [query db] ;; TODO: [query db & inputs]
-  (execute-query! db (prn-str query)))
+  [query db & inputs]
+  (execute-query! db (prn-str query) inputs))
 
 
 
