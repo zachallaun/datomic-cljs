@@ -8,7 +8,7 @@
 (def js-url (nodejs/require "url"))
 
 (defprotocol IQueryDatomic
-  (execute-query! [db query-str inputs]))
+  (execute-query [db query-str inputs]))
 
 (defrecord DatomicConnection [hostname port db-alias])
 
@@ -23,35 +23,42 @@
   [hostname port alias dbname]
   (->DatomicConnection hostname port (str alias "/" dbname)))
 
+(defn- get-edn
+  "Make an async request for application/edn."
+  [hostname path & {:keys [port protocol]
+                    :or {port 80
+                         protocol "http:"}}]
+  (let [c-edn (async/chan)
+        c-res (http/get {:protocol protocol
+                         :hostname hostname
+                         :port port
+                         :path path
+                         :headers {"Accept" "application/edn"}})]
+    (go
+      (let [[_ res] (<! c-res)] ;; TODO handle :error case
+        (loop [chunks []]
+          (if-let [chunk (<! (:c-body res))]
+            (recur (conj chunks chunk))
+            (do
+              (->> chunks
+                   (apply str)
+                   (reader/read-string)
+                   (>! c-edn))
+              (async/close! c-edn))))))
+    c-edn))
+
 (defrecord DatomicNow [connection]
   IQueryDatomic
-  (execute-query! [{{:keys [hostname port db-alias]} :connection} q-str inputs]
-    (let [c-query (async/chan)
-          args-str (-> {:db/alias db-alias}
+  (execute-query [{{:keys [hostname port db-alias]} :connection} q-str inputs]
+    (let [args-str (-> {:db/alias db-alias}
                        (cons inputs)
                        (vec)
                        (prn-str))
           encoded-q-str (->> {:query {:q q-str :args args-str}}
                              (clj->js)
                              (.format js-url))
-          path (str "/api/query" encoded-q-str)
-          c-res (http/get {:protocol "http:"
-                           :hostname hostname
-                           :port port
-                           :path path
-                           :headers {"Accept" "application/edn"}})]
-      (go
-        (let [[_ res] (<! c-res)]
-          (loop [chunks []]
-            (if-let [chunk (<! (:c-body res))]
-              (recur (conj chunks chunk))
-              (do
-                (->> chunks
-                     (apply str)
-                     (reader/read-string)
-                     (>! c-query))
-                (async/close! c-query))))))
-      c-query)))
+          path (str "/api/query" encoded-q-str)]
+      (get-edn hostname path :port port))))
 
 (defn db
   "Creates an abstract Datomic value that can be queried."
@@ -63,17 +70,4 @@
    channel will be returned which will ultimately contain the result of
    the query, and will be closed when the query is complete."
   [query db & inputs]
-  (execute-query! db (prn-str query) inputs))
-
-
-
-
-(comment
-  (def conn (connect "localhost" 9898 "db" "seattle"))
-
-  (go
-    (-> (<! (q '[:find ?n :where [?_ :community/name ?n]] (db conn)))
-        (ffirst)
-        (println)))
-
-  )
+  (execute-query db (prn-str query) inputs))
