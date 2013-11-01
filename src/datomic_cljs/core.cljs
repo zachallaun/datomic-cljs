@@ -1,8 +1,16 @@
 (ns datomic-cljs.core
-  (:require [cljs.core.async :as async]
+  (:require [cljs.core.async :as async :refer [<! >!]]
             [datomic-cljs.http :as http]
             [datomic-cljs.api :as d])
   (:require-macros [cljs.core.async.macros :refer [go]]))
+
+(defn go-go-post! [options data]
+  (go
+    (let [[_ res] (<! (http/post options data))]
+      (loop []
+        (when-let [piece (<! (:c-body res))]
+          (println piece)
+          (recur))))))
 
 (defn go-go-http! [options]
   (go
@@ -19,17 +27,36 @@
       (.log js/console "go!"))))
 
 (defn -main [& args]
-  (let [conn (d/connect "localhost" 9898 "db" "seattle")]
+
+  #_(let [conn (d/connect "localhost" 9898 "db" "seattle")]
     (go
       (println
        (ffirst
         (<! (d/q '[:find ?eid :in $ ?n :where [?eid :community/name ?n]]
-                 (d/db conn) "Capitol Hill Triangle")))))))
+                 (d/db conn) "Bar community!"))))))
+
+  (go-go-post! {:protocol "http:"
+                :hostname "localhost"
+                :port 9898
+                :path "/data/db/seattle/"
+                :headers {"Accept" "application/edn"
+                          "Content-Type" "application/x-www-form-urlencoded"}}
+               {:tx-data "[[:db/add 17592186045489 :community/name \"Baz community!\"]]"})
+
+
+)
 
 (set! *main-cli-fn* -main)
 
 
 (comment
+
+  (let [conn (d/connect "localhost" 9898 "db" "seattle")]
+    (go
+      (println
+       (ffirst
+        (<! (d/q '[:find ?eid :in $ ?n :where [?eid :community/name ?n]]
+                 (d/db conn) "Capitol Hill Triangle"))))))
 
   #_(go-go-http! {:protocol "http:"
                   :hostname "localhost"
