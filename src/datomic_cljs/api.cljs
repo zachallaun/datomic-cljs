@@ -23,30 +23,6 @@
   [hostname port alias dbname]
   (->DatomicConnection hostname port (str alias "/" dbname)))
 
-(defn- get-edn
-  "Make an async request for application/edn."
-  [hostname path & {:keys [port protocol]
-                    :or {port 80
-                         protocol "http:"}}]
-  (let [c-edn (async/chan)
-        c-res (http/get {:protocol protocol
-                         :hostname hostname
-                         :port port
-                         :path path
-                         :headers {"Accept" "application/edn"}})]
-    (go
-      (let [[_ res] (<! c-res)] ;; TODO handle :error case
-        (loop [chunks []]
-          (if-let [chunk (<! (:c-body res))]
-            (recur (conj chunks chunk))
-            (do
-              (->> chunks
-                   (apply str)
-                   (reader/read-string)
-                   (>! c-edn))
-              (async/close! c-edn))))))
-    c-edn))
-
 (defrecord DatomicNow [connection]
   IQueryDatomic
   (execute-query [{{:keys [hostname port db-alias]} :connection} q-str inputs]
@@ -58,7 +34,11 @@
                              (clj->js)
                              (.format js-url))
           path (str "/api/query" encoded-q-str)]
-      (get-edn hostname path :port port))))
+      (http/receive-edn (http/get {:protocol "http:"
+                                   :hostname hostname
+                                   :port port
+                                   :path path
+                                   :headers {"Accept" "application/edn"}})))))
 
 (defn db
   "Creates an abstract Datomic value that can be queried."

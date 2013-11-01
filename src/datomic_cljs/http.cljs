@@ -1,7 +1,8 @@
 (ns datomic-cljs.http
   (:refer-clojure :exclude [get])
   (:require [cljs.nodejs :as nodejs]
-            [cljs.core.async :as async :refer [<!]])
+            [cljs.core.async :as async :refer [<!]]
+            [cljs.reader :as reader])
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
 (def js-http (nodejs/require "http"))
@@ -73,3 +74,21 @@
        (.write js-req post-data)
        (.end js-req)
        c-res)))
+
+(defn receive-edn
+  "Given a response channel, eventually receive chunked edn on :c-body
+   and forward it onto returned core.async channel."
+  [c-res]
+  (let [c-edn (async/chan)]
+    (go
+      (let [[_ res] (<! c-res)] ;; TODO handle :error case
+        (loop [chunks []]
+          (if-let [chunk (<! (:c-body res))]
+            (recur (conj chunks chunk))
+            (do
+              (->> chunks
+                   (apply str)
+                   (reader/read-string)
+                   (>! c-edn))
+              (async/close! c-edn))))))
+    c-edn))
