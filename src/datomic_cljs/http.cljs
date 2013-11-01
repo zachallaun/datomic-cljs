@@ -40,7 +40,7 @@
      :c-body, a core.async channel containing response body chunks
               (strings), which will be closed when streaming is done."
   [options]
-  (let [c-res (async/chan)
+  (let [c-res (async/chan 1)
         js-req (.get js-http
                      (clj->js options)
                      (async-response-body-handler c-res))]
@@ -61,7 +61,7 @@
      (post options ""))
   ([{:keys [headers] :as options} data]
      (let [c-write-data (async/chan 10)
-           c-res (async/chan)
+           c-res (async/chan 1)
            post-data (encode-query data)
            js-req (.request js-http
                             (clj->js
