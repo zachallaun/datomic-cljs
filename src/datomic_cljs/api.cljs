@@ -63,6 +63,11 @@
   [{:keys [connection implicit-args]} t]
   (->DatomicDB connection (assoc implicit-args :as-of t)))
 
+(defn as-of-t
+  "Returns the as-of point, or nil if none."
+  [{{as-of :as-of} :implicit-args}]
+  as-of)
+
 (defn q
   "Execute a query against a database value with inputs. Returns a
    core.async channel that will contain the result of the query, and
