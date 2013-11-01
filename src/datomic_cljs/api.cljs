@@ -35,10 +35,10 @@
   [hostname port alias dbname]
   (->DatomicConnection hostname port (str alias "/" dbname)))
 
-(defrecord DatomicNow [connection]
+(defrecord DatomicDB [connection implicit-args]
   IQueryDatomic
-  (execute-query [{{:keys [hostname port db-alias]} :connection} q-str inputs]
-    (let [args-str (-> {:db/alias db-alias}
+  (execute-query [_ q-str inputs]
+    (let [args-str (-> implicit-args
                        (cons inputs)
                        (vec)
                        (prn-str))
@@ -47,15 +47,21 @@
                              (.format js-url))
           path (str "/api/query" encoded-q-str)]
       (http/receive-edn (http/get {:protocol "http:"
-                                   :hostname hostname
-                                   :port port
+                                   :hostname (:hostname connection)
+                                   :port (:port connection)
                                    :path path
                                    :headers {"Accept" "application/edn"}})))))
 
 (defn db
   "Creates an abstract Datomic value that can be queried."
-  [connection]
-  (->DatomicNow connection))
+  [{:keys [db-alias] :as connection}]
+  (->DatomicDB connection {:db/alias db-alias}))
+
+(defn as-of
+  "Returns the value of the database as of some point t, inclusive.
+   t can be a transaction number, transaction ID, or inst."
+  [{:keys [connection implicit-args]} t]
+  (->DatomicDB connection (assoc implicit-args :as-of t)))
 
 (defn q
   "Execute a query against a database value with inputs. Returns a

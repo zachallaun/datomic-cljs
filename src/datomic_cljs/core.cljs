@@ -31,7 +31,8 @@
   (let [conn (d/connect "localhost" 9898 "db" "seattle")]
     (go
       (println
-       (<! (d/transact conn '[[:db/add 17592186045489 :community/name "ugh"]])))))
+       (<! (d/q '[:find ?n :where [17592186045489 :community/name ?n]]
+                (d/as-of (d/db conn) 1239)))))) ;; "Baz community!"
 
 )
 
@@ -39,6 +40,11 @@
 
 
 (comment
+
+  (let [conn (d/connect "localhost" 9898 "db" "seattle")]
+    (go
+      (println
+       (<! (d/transact conn '[[:db/add 17592186045489 :community/name "ugh"]])))))
 
   (let [conn (d/connect "localhost" 9898 "db" "seattle")]
     (go
