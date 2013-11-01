@@ -44,7 +44,9 @@
 
   IHaveEntities
   (get-entity [_ eid]
-    (let [path (->> (http/encode-query {:e eid :as-of (:as-of implicit-args)})
+    (let [path (->> (http/encode-query {:e eid
+                                        :as-of (:as-of implicit-args)
+                                        :since (:since implicit-args)})
                     (str "/data/" (:db/alias implicit-args) "/-/entity?"))]
       (http/receive-edn
        (http/get {:protocol "http:"
@@ -79,6 +81,17 @@
   "Returns the as-of point, or nil if none."
   [{{as-of :as-of} :implicit-args}]
   as-of)
+
+(defn since
+  "Returns the value of the database since some point t, exclusive.
+   t can be a transaction number, transaction ID, or inst."
+  [{:keys [connection implicit-args]} t]
+  (->DatomicDB connection (assoc implicit-args :since t)))
+
+(defn since-t
+  "Returns the since point, or nil if none."
+  [{{since :since} :implicit-args}]
+  since)
 
 (defn q
   "Execute a query against a database value with inputs. Returns a
