@@ -8,6 +8,11 @@
 (def js-http (nodejs/require "http"))
 (def js-querystring (nodejs/require "querystring"))
 
+(defn encode-query
+  "Encodes a map as a urlencoded querystring."
+  [m]
+  (.stringify js-querystring (clj->js m)))
+
 (defn async-response-body-handler
   "Handles an asyncronous request, writing the a [:success response]
    pair to c-res, handling a streamed body, and closing c-res when
@@ -59,7 +64,7 @@
   ([{:keys [headers] :as options} data]
      (let [c-write-data (async/chan 10)
            c-res (async/chan)
-           post-data (.stringify js-querystring (clj->js data))
+           post-data (encode-query data)
            js-req (.request js-http
                             (clj->js
                              (assoc options

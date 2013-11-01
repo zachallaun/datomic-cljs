@@ -30,9 +30,10 @@
 
   (let [conn (d/connect "localhost" 9898 "db" "seattle")]
     (go
-      (println
-       (<! (d/q '[:find ?n :where [17592186045489 :community/name ?n]]
-                (d/as-of (d/db conn) 1239)))))) ;; "Baz community!"
+      (println (<! (d/entity (d/db conn)
+                             17592186045489)))
+      (println (<! (d/entity (d/as-of (d/db conn) 1239)
+                             17592186045489)))))
 
 )
 
@@ -40,6 +41,12 @@
 
 
 (comment
+
+  (let [conn (d/connect "localhost" 9898 "db" "seattle")]
+    (go
+      (println
+       (<! (d/q '[:find ?n :where [17592186045489 :community/name ?n]]
+                (d/as-of (d/db conn) 1239))))))
 
   (let [conn (d/connect "localhost" 9898 "db" "seattle")]
     (go
@@ -53,18 +60,18 @@
         (<! (d/q '[:find ?eid :in $ ?n :where [?eid :community/name ?n]]
                  (d/db conn) "Capitol Hill Triangle"))))))
 
-  #_(go-go-http! {:protocol "http:"
-                  :hostname "localhost"
-                  :path "/api/query?q=%5B%3Afind%20%3Fe%20%3Fv%20%3Ain%20%24%20%3Awhere%20%5B%3Fe%20%3Adb%2Fdoc%20%3Fv%5D%5D&args=%5B%7B%3Adb%2Falias%20%22db%2Fseattle%22%7D%5D"
+  (go-go-http! {:protocol "http:"
+                :hostname "localhost"
+                :path "/api/query?q=%5B%3Afind%20%3Fe%20%3Fv%20%3Ain%20%24%20%3Awhere%20%5B%3Fe%20%3Adb%2Fdoc%20%3Fv%5D%5D&args=%5B%7B%3Adb%2Falias%20%22db%2Fseattle%22%7D%5D"
                 :port "9898"
                 :headers {"Accept" "application/edn"}})
 
-  #_(go-go-post! {:protocol "http:"
-                  :hostname "localhost"
-                  :port 9898
-                  :path "/data/db/seattle/"
-                  :headers {"Accept" "application/edn"
-                            "Content-Type" "application/x-www-form-urlencoded"}}
-                 {:tx-data "[[:db/add 17592186045489 :community/name \"Baz community!\"]]"})
+  (go-go-post! {:protocol "http:"
+                :hostname "localhost"
+                :port 9898
+                :path "/data/db/seattle/"
+                :headers {"Accept" "application/edn"
+                          "Content-Type" "application/x-www-form-urlencoded"}}
+               {:tx-data "[[:db/add 17592186045489 :community/name \"Baz community!\"]]"})
 
   )

@@ -1,14 +1,14 @@
 (ns datomic-cljs.api
   (:require [datomic-cljs.http :as http]
-            [cljs.nodejs :as nodejs]
             [cljs.core.async :as async]
             [cljs.reader :as reader])
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
-(def js-url (nodejs/require "url"))
-
 (defprotocol IQueryDatomic
   (execute-query [db query-str inputs]))
+
+(defprotocol IHaveEntities
+  (get-entity [db eid]))
 
 (defprotocol ITransactDatomic
   (execute-transaction! [db tx-data-str]))
@@ -16,13 +16,42 @@
 (defrecord DatomicConnection [hostname port db-alias]
   ITransactDatomic
   (execute-transaction! [_ tx-data-str]
-    (http/receive-edn (http/post {:protocol "http:"
-                                  :hostname hostname
-                                  :port port
-                                  :path (str "/data/" db-alias "/")
-                                  :headers {"Accept" "application/edn"
-                                            "Content-Type" "application/x-www-form-urlencoded"}}
-                                 {:tx-data tx-data-str}))))
+    ;; TODO: return database values as :db-before and :db-after
+    (http/receive-edn
+     (http/post {:protocol "http:"
+                 :hostname hostname
+                 :port port
+                 :path (str "/data/" db-alias "/")
+                 :headers {"Accept" "application/edn"
+                           "Content-Type" "application/x-www-form-urlencoded"}}
+                {:tx-data tx-data-str}))))
+
+(defrecord DatomicDB [connection implicit-args]
+  IQueryDatomic
+  (execute-query [_ q-str inputs]
+    (let [args-str (-> implicit-args
+                       (cons inputs)
+                       (vec)
+                       (prn-str))
+          encoded-q-str (http/encode-query {:q q-str :args args-str})
+          path (str "/api/query?" encoded-q-str)]
+      (http/receive-edn
+       (http/get {:protocol "http:"
+                  :hostname (:hostname connection)
+                  :port (:port connection)
+                  :path path
+                  :headers {"Accept" "application/edn"}}))))
+
+  IHaveEntities
+  (get-entity [_ eid]
+    (let [path (->> (http/encode-query {:e eid :as-of (:as-of implicit-args)})
+                    (str "/data/" (:db/alias implicit-args) "/-/entity?"))]
+      (http/receive-edn
+       (http/get {:protocol "http:"
+                  :hostname (:hostname connection)
+                  :port (:port connection)
+                  :path path
+                  :headers {"Accept" "application/edn"}})))))
 
 (defn connect
   "Create an abstract connection to a Datomic REST service by passing
@@ -34,23 +63,6 @@
      dbname, the name of the database being connected to."
   [hostname port alias dbname]
   (->DatomicConnection hostname port (str alias "/" dbname)))
-
-(defrecord DatomicDB [connection implicit-args]
-  IQueryDatomic
-  (execute-query [_ q-str inputs]
-    (let [args-str (-> implicit-args
-                       (cons inputs)
-                       (vec)
-                       (prn-str))
-          encoded-q-str (->> {:query {:q q-str :args args-str}}
-                             (clj->js)
-                             (.format js-url))
-          path (str "/api/query" encoded-q-str)]
-      (http/receive-edn (http/get {:protocol "http:"
-                                   :hostname (:hostname connection)
-                                   :port (:port connection)
-                                   :path path
-                                   :headers {"Accept" "application/edn"}})))))
 
 (defn db
   "Creates an abstract Datomic value that can be queried."
@@ -74,6 +86,11 @@
    will be closed when the query is complete."
   [query db & inputs]
   (execute-query db (prn-str query) inputs))
+
+(defn entity
+  "Returns a map of the entity's attributes for the given id."
+  [db eid]
+  (get-entity db eid))
 
 (defn transact
   "Submits a transaction to the database for writing. The transaction
