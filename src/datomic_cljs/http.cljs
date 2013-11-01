@@ -6,8 +6,8 @@
   (:require-macros [cljs.core.async.macros :refer [go]]
                    [datomic-cljs.macros :refer [>!x]]))
 
-(def js-http (nodejs/require "http"))
-(def js-querystring (nodejs/require "querystring"))
+(def ^:private js-http (nodejs/require "http"))
+(def ^:private js-querystring (nodejs/require "querystring"))
 
 (defn encode-query
   "Encodes a map as a urlencoded querystring."
