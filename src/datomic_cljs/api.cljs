@@ -10,7 +10,19 @@
 (defprotocol IQueryDatomic
   (execute-query [db query-str inputs]))
 
-(defrecord DatomicConnection [hostname port db-alias])
+(defprotocol ITransactDatomic
+  (execute-transaction! [db tx-data-str]))
+
+(defrecord DatomicConnection [hostname port db-alias]
+  ITransactDatomic
+  (execute-transaction! [_ tx-data-str]
+    (http/receive-edn (http/post {:protocol "http:"
+                                  :hostname hostname
+                                  :port port
+                                  :path (str "/data/" db-alias "/")
+                                  :headers {"Accept" "application/edn"
+                                            "Content-Type" "application/x-www-form-urlencoded"}}
+                                 {:tx-data tx-data-str}))))
 
 (defn connect
   "Create an abstract connection to a Datomic REST service by passing
@@ -46,8 +58,28 @@
   (->DatomicNow connection))
 
 (defn q
-  "Execute a query against a database value with inputs. A core.async
-   channel will be returned which will ultimately contain the result of
-   the query, and will be closed when the query is complete."
+  "Execute a query against a database value with inputs. Returns a
+   core.async channel that will contain the result of the query, and
+   will be closed when the query is complete."
   [query db & inputs]
   (execute-query db (prn-str query) inputs))
+
+(defn transact
+  "Submits a transaction to the database for writing. The transaction
+   data is sent to the Transactor and, if transactAsync, processed
+   asynchronously.
+
+   tx-data is a list of lists, each of which specifies a write
+   operation, either an assertion, a retraction or the invocation of
+   a data function. Each nested list starts with a keyword identifying
+   the operation followed by the arguments for the operation.
+
+   Returns a core.async channel that will contain a map with the
+   following keys:
+
+     :db-before, the database value before the transaction;
+     :db-after, the database value after the transaction;
+     :tx-data, the collection of Datums produced by the transaction;
+     :tempids, an argument to resolve-tempids."
+  [connection tx-data]
+  (execute-transaction! connection (prn-str tx-data)))

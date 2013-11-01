@@ -57,7 +57,6 @@
   ([options]
      (post options ""))
   ([{:keys [headers] :as options} data]
-     (println options)
      (let [c-write-data (async/chan 10)
            c-res (async/chan)
            post-data (.stringify js-querystring (clj->js data))
