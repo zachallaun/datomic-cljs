@@ -8,7 +8,8 @@ What is this; Clojure?
 (ns sweet-node-cljs-app
   (:require [datomic-cljs.api :as d]
             [cljs.core.async :as async :refer [<!]])
-  (:require-macros [cljs.core.async.macros :refer [go]]))
+  (:require-macros [cljs.core.async.macros :refer [go]]
+                   [datomic-cljs.macros :refer [<?]]))
 
 ;; Assuming I have a Datomic REST service running locally on port 9898, with
 ;; a transactor aliased to "db" and a database called "seattle".
@@ -16,7 +17,7 @@ What is this; Clojure?
 
 (go
   (->> (d/db conn)
-       (<! (d/q '[:find ?n :where [?_ :community/name ?n]]))
+       (<? (d/q '[:find ?n :where [?_ :community/name ?n]]))
        ffirst
        println))
 ;; prints "Capitol Hill Triangle"

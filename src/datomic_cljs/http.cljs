@@ -3,7 +3,8 @@
   (:require [cljs.nodejs :as nodejs]
             [cljs.core.async :as async :refer [<!]]
             [cljs.reader :as reader])
-  (:require-macros [cljs.core.async.macros :refer [go]]))
+  (:require-macros [cljs.core.async.macros :refer [go]]
+                   [datomic-cljs.macros :refer [>!x]]))
 
 (def js-http (nodejs/require "http"))
 (def js-querystring (nodejs/require "querystring"))
@@ -14,9 +15,8 @@
   (.stringify js-querystring (clj->js m)))
 
 (defn async-response-body-handler
-  "Handles an asyncronous request, writing the a [:success response]
-   pair to c-res, handling a streamed body, and closing c-res when
-   done."
+  "Handles an asyncronous request, writing the a response to c-res,
+   handling a streamed body, and closing c-res when done."
   [c-res]
   (fn [res]
     (let [c-body (async/chan 10)]
@@ -24,16 +24,16 @@
       (.on res "data" #(async/put! c-body %))
       (.on res "end" #(async/close! c-body))
       (async/put! c-res
-                  [:success {:c-body c-body
-                             :status (.-statusCode res)
-                             :res res}]
+                  {:c-body c-body
+                   :status (.-statusCode res)
+                   :res res}
                   #(async/close! c-res)))))
 
 (defn get
-  "Make an asyncronous GET request with the given options, returning
-   a core.async channel that will ultimately contain either [:success
-   response] or [:error error-object]. In the case of success, the
-   response will be a map containing:
+  "Make an asyncronous GET request with the given options, returning a
+   core.async channel that will ultimately contain either a response
+   or an error. In the case of success, the response will be a map
+   containing:
 
      :status, the HTTP status code;
      :res, the Node.js response object;
@@ -44,16 +44,14 @@
         js-req (.get js-http
                      (clj->js options)
                      (async-response-body-handler c-res))]
-    (.on js-req "error" #(async/put! c-res
-                                     [:error %]
-                                     (fn [] (async/close! c-res))))
+    (.on js-req "error" #(async/put! c-res % (fn [] (async/close! c-res))))
     c-res))
 
 (defn post
   "Make an asyncronous POST request with the given options and data,
    returning a core.async channel that will ultimately contain either
-   [:success response] or [:error error-object]. In the case of success,
-   the response will be a map containing:
+   a response on an error. In the case of success, the response will
+   be a map containing:
 
      :status, the HTTP status code;
      :res, the Node.js response object;
@@ -72,9 +70,7 @@
                                :headers (assoc (or headers {})
                                           "Content-Length" (.byteLength js/Buffer post-data))))
                             (async-response-body-handler c-res))]
-       (.on js-req "error" #(async/put! c-res
-                                        [:error %]
-                                        (fn [] (async/close! c-res))))
+       (.on js-req "error" #(async/put! c-res % (fn [] (async/close! c-res))))
        (.write js-req post-data)
        (.end js-req)
        c-res)))
@@ -83,16 +79,16 @@
   "Given a response channel, eventually receive chunked edn on :c-body
    and forward it onto returned core.async channel."
   [c-res]
-  (let [c-edn (async/chan)]
+  (let [c-edn (async/chan 1)]
     (go
-      (let [[_ res] (<! c-res)] ;; TODO handle :error case
-        (loop [chunks []]
-          (if-let [chunk (<! (:c-body res))]
-            (recur (conj chunks chunk))
-            (do
+      (let [res (<! c-res)] ;; TODO handle :error case
+        (if (isa? js/Error res)
+          (>!x c-edn res)
+          (loop [chunks []]
+            (if-let [chunk (<! (:c-body res))]
+              (recur (conj chunks chunk))
               (->> chunks
                    (apply str)
                    (reader/read-string)
-                   (>! c-edn))
-              (async/close! c-edn))))))
+                   (>!x c-edn)))))))
     c-edn))

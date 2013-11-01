@@ -2,7 +2,8 @@
   (:require [cljs.core.async :as async :refer [<! >!]]
             [datomic-cljs.http :as http]
             [datomic-cljs.api :as d])
-  (:require-macros [cljs.core.async.macros :refer [go]]))
+  (:require-macros [cljs.core.async.macros :refer [go]]
+                   [datomic-cljs.macros :refer [<?]]))
 
 (defn go-go-post! [options data]
   (go
@@ -30,10 +31,13 @@
 
   (let [conn (d/connect "localhost" 9898 "db" "seattle")]
     (go
-      (println (<! (d/entity (d/db conn)
-                             17592186045489)))
-      (println (<! (d/entity (d/as-of (d/db conn) 1239)
-                             17592186045489)))))
+      (try
+        (println
+         (ffirst
+          (<? (d/q '[:find ?n :where [17592186045489 :community/name ?n]]
+                   (d/db conn)))))
+        (catch js/Error e
+          (println "got error!")))))
 
 )
 
