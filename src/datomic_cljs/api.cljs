@@ -155,4 +155,7 @@
      :tx-data, the collection of Datums produced by the transaction;
      :tempids, an argument to resolve-tempids."
   [connection tx-data]
-  (execute-transaction! connection (prn-str tx-data)))
+  (execute-transaction! connection (if (string? tx-data)
+                                     tx-data
+                                     (prn-str tx-data))))
+
