@@ -41,7 +41,7 @@
 
 )
 
-(set! *main-cli-fn* -main)
+#_(set! *main-cli-fn* -main)
 
 
 (comment

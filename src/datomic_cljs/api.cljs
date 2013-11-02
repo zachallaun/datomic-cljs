@@ -1,8 +1,9 @@
 (ns datomic-cljs.api
   (:require [datomic-cljs.http :as http]
-            [cljs.core.async :as async]
+            [cljs.core.async :as async :refer [>! <!]]
             [cljs.reader :as reader])
-  (:require-macros [cljs.core.async.macros :refer [go]]))
+  (:require-macros [cljs.core.async.macros :refer [go]]
+                   [datomic-cljs.macros :refer [>!x]]))
 
 (defprotocol IQueryDatomic
   (execute-query [db query-str inputs]))
@@ -65,6 +66,37 @@
      dbname, the name of the database being connected to."
   [hostname port alias dbname]
   (->DatomicConnection hostname port (str alias "/" dbname)))
+
+(defn create-database
+  "Create or connect to a Datomic database via a Datomic REST service
+   by passing the following arguments:
+
+     hostname, e.g. localhost;
+     port, the port on which the REST service is listening;
+     alias, the transactor alias;
+     dbname, the name of the database being created.
+
+   Returns a core.async channel eventually containing a database
+   connection (as if using datomic-cljs.api/connect), or an error."
+  [hostname port alias dbname]
+  (let [c-conn (async/chan 1)]
+    (go
+      (let [{:keys [status] :as res}
+            (<! (http/post {:protocol "http:"
+                            :hostname hostname
+                            :port port
+                            :path (str "/data/" alias "/")
+                            :headers {"Accept" "application/edn"
+                                      "Content-Type" "application/x-www-form-urlencoded"}}
+                           {:db-name dbname}))]
+        (cond (isa? js/Error res)
+                (>!x c-conn res)
+              (or (= status 200) (= status 201))
+                (>!x c-conn (connect hostname port alias dbname))
+              :else
+                (>!x c-conn (js/Error.
+                             (str "Could not create or connect to db: " status))))))
+    c-conn))
 
 (defn db
   "Creates an abstract Datomic value that can be queried."
