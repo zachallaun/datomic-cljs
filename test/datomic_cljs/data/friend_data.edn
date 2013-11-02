@@ -1,0 +1,18 @@
+[
+
+ {:db/id #db/id[:db.part/user -1]
+  :person/name "Frank"
+  :person/age 111}
+
+ {:db/id #db/id[:db.part/user -2]
+  :person/name "Becky"
+  :person/age 222
+  :person/friends #{#db/id[:db.part/user -1]}}
+
+ {:db/id #db/id[:db.part/user -3]
+  :person/name "Caroll"
+  :person/age 333
+  :person/friends #{#db/id[:db.part/user -1]
+                    #db/id[:db.part/user -2]}}
+
+ ]

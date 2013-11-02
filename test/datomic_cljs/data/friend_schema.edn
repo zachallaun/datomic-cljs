@@ -1,0 +1,24 @@
+[
+
+ {:db/ident :person/name
+  :db/doc "A person's name"
+  :db/valueType :db.type/string
+  :db/cardinality :db.cardinality/one
+  :db/id #db/id[:db.part/db]
+  :db.install/_attribute :db.part/db}
+
+ {:db/ident :person/age
+  :db/doc "A person's age"
+  :db/valueType :db.type/long
+  :db/cardinality :db.cardinality/one
+  :db/id #db/id[:db.part/db]
+  :db.install/_attribute :db.part/db}
+
+ {:db/ident :person/friends
+  :db/doc "A person's friends"
+  :db/valueType :db.type/ref
+  :db/cardinality :db.cardinality/many
+  :db/id #db/id[:db.part/db]
+  :db.install/_attribute :db.part/db}
+
+ ]
