@@ -14,6 +14,9 @@
 (defprotocol ITransactDatomic
   (execute-transaction! [db tx-data-str]))
 
+(defprotocol IBasis
+  (get-basis [db]))
+
 (defrecord DatomicConnection [hostname port db-alias]
   ITransactDatomic
   (execute-transaction! [_ tx-data-str]
@@ -54,7 +57,25 @@
                   :hostname (:hostname connection)
                   :port (:port connection)
                   :path path
-                  :headers {"Accept" "application/edn"}})))))
+                  :headers {"Accept" "application/edn"}}))))
+
+  IBasis
+  (get-basis [_]
+    (let [c-basis (async/chan 1)]
+      (go
+        (if (:as-of implicit-args)
+          (>!x c-basis (:as-of implicit-args))
+          (let [res (<! (http/receive-edn
+                         (http/get {:protocol "http:"
+                                    :hostname (:hostname connection)
+                                    :port (:port connection)
+                                    :path (str "/data/" (:db-alias connection)
+                                               "/" (or (:as-of implicit-args) "-") "/")
+                                    :headers {"Accept" "application/edn"}})))]
+            (if (instance? js/Error res)
+              (>!x c-basis res)
+              (>!x c-basis (:basis-t res))))))
+      c-basis)))
 
 (defn connect
   "Create an abstract connection to a Datomic REST service by passing
@@ -89,7 +110,7 @@
                             :headers {"Accept" "application/edn"
                                       "Content-Type" "application/x-www-form-urlencoded"}}
                            {:db-name dbname}))]
-        (cond (isa? js/Error res)
+        (cond (instance? js/Error res)
                 (>!x c-conn res)
               (or (= status 200) (= status 201))
                 (>!x c-conn (connect hostname port alias dbname))
@@ -124,6 +145,12 @@
   "Returns the since point, or nil if none."
   [{{since :since} :implicit-args}]
   since)
+
+(defn basis-t
+  "Returns a core.async channel eventually containing the t of the
+   the most recent transaction available via this db value."
+  [db]
+  (get-basis db))
 
 (defn q
   "Execute a query against a database value with inputs. Returns a

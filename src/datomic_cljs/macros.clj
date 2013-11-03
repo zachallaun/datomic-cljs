@@ -12,6 +12,6 @@
   is a js/Error."
   [c]
   `(let [val# (cljs.core.async/<! ~c)]
-     (if (isa? js/Error val#)
+     (if (instance? js/Error val#)
        (throw val#)
        val#)))

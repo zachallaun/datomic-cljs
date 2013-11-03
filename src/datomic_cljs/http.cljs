@@ -26,6 +26,7 @@
       (async/put! c-res
                   {:c-body c-body
                    :status (.-statusCode res)
+                   :headers (js->clj (.-headers res))
                    :res res}
                   #(async/close! c-res)))))
 
@@ -81,14 +82,19 @@
   [c-res]
   (let [c-edn (async/chan 1)]
     (go
-      (let [res (<! c-res)] ;; TODO handle :error case
-        (if (isa? js/Error res)
-          (>!x c-edn res)
-          (loop [chunks []]
-            (if-let [chunk (<! (:c-body res))]
-              (recur (conj chunks chunk))
-              (->> chunks
-                   (apply str)
-                   (reader/read-string)
-                   (>!x c-edn)))))))
+      (let [res (<! c-res)
+            content-type (cljs.core/get (:headers res) "content-type")]
+        (cond (isa? js/Error res)
+                (>!x c-edn res)
+              (not (re-matches #"^application/edn.*" content-type))
+                (>!x c-edn (js/Error. (str "application/edn not sent; got "
+                                           content-type)))
+              :else
+                (loop [chunks []]
+                  (if-let [chunk (<! (:c-body res))]
+                    (recur (conj chunks chunk))
+                    (->> chunks
+                         (apply str)
+                         (reader/read-string)
+                         (>!x c-edn)))))))
     c-edn))

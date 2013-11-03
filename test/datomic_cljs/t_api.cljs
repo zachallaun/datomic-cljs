@@ -71,7 +71,12 @@
               before (ffirst (<? (d/q name-query (d/as-of (d/db conn) t) eid)))
               after (ffirst (<? (d/q name-query (d/db conn) eid)))]
           (and (= before "Becky")
-               (= after "Wilma")))))))
+               (= after "Wilma"))))
+
+      (test "can access the basis-t of a db"
+        (let [t (<? (d/basis-t (d/db conn)))]
+          (and (number? t)
+               (= (dec t) (<? (d/basis-t (d/as-of (d/db conn) (dec t)))))))))))
 
 (set! *main-cli-fn* all-the-tests)
 
