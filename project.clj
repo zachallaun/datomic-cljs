@@ -7,15 +7,15 @@
 
   :profiles {:dev {:plugins [[lein-cljsbuild "1.0.0-SNAPSHOT"]]}}
 
-  :cljsbuild {:builds [{:id "dev"
-                        :source-paths ["src"]
+  :cljsbuild {:builds {:example
+                       {:source-paths ["src" "examples"]
                         :compiler {:target :nodejs
-                                   :output-to "target/datomic_cljs_dev.js"
+                                   :output-to "target/datomic_cljs_example.js"
                                    :optimizations :simple
                                    :pretty-print true}}
-                       {:id "test"
-                        :source-paths ["src" "test"]
+                       :test
+                       {:source-paths ["src" "test"]
                         :compiler {:target :nodejs
                                    :output-to "target/datomic_cljs_test.js"
                                    :optimizations :simple
-                                   :pretty-print true}}]})
+                                   :pretty-print true}}}})
