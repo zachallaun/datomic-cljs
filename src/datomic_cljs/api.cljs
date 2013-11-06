@@ -6,45 +6,45 @@
                    [datomic-cljs.macros :refer [>!x]]))
 
 (defprotocol IQueryDatomic
-  (execute-query [db query inputs]))
+  (-q [db query inputs]))
 
 (defprotocol IHaveEntities
-  (get-entity [db eid]))
+  (-entity [db eid]))
 
 (defprotocol ITransactDatomic
-  (execute-transaction! [db tx-data-str]))
+  (-transact [db tx-data-str]))
 
 (defprotocol IBasis
-  (get-basis [db]))
+  (-basis-t [db]))
 
 (defprotocol IUrl
-  (url-for [this]))
+  (-url-for [this]))
 
 (defrecord DatomicConnection [hostname port db-alias]
   IUrl
-  (url-for [_]
+  (-url-for [_]
     (str "http://" hostname ":" port))
 
   ITransactDatomic
-  (execute-transaction! [conn tx-data-str]
+  (-transact [conn tx-data-str]
     ;; TODO: return database values as :db-before and :db-after
-    (let [path (str (url-for conn) "/data/" db-alias "/")]
+    (let [path (str (-url-for conn) "/data/" db-alias "/")]
       (http/body
        (http/request :post path {:edn true
                                  :form {:tx-data tx-data-str}})))))
 
 (defrecord DatomicDB [conn implicit-args]
   IQueryDatomic
-  (execute-query [_ query inputs]
+  (-q [_ query inputs]
     (let [args (vec (cons implicit-args inputs))
-          path (str (url-for conn) "/api/query")]
+          path (str (-url-for conn) "/api/query")]
       (http/body
        (http/request :get path {:edn true
                                 :qs {:q (prn-str query) :args (prn-str args)}}))))
 
   IHaveEntities
-  (get-entity [_ eid]
-    (let [path (str (url-for conn) "/data/" (:db/alias implicit-args) "/-/entity")]
+  (-entity [_ eid]
+    (let [path (str (-url-for conn) "/data/" (:db/alias implicit-args) "/-/entity")]
       (http/body
        (http/request :get path {:edn true
                                 :qs {:e eid
@@ -52,12 +52,12 @@
                                      :since (:since implicit-args)}}))))
 
   IBasis
-  (get-basis [_]
+  (-basis-t [_]
     (let [c-basis (async/chan 1)]
       (go
         (if (:as-of implicit-args)
           (>!x c-basis (:as-of implicit-args))
-          (let [path (str (url-for conn)
+          (let [path (str (-url-for conn)
                           "/data/" (:db-alias conn)
                           "/" (or (:as-of implicit-args) "-") "/")
                 res (<! (http/request :get path {:edn true}))]
@@ -92,7 +92,7 @@
   (let [c-conn (async/chan 1)
         conn (connect hostname port alias db-name)]
     (go
-      (let [path (str (url-for conn) "/data/" alias "/")
+      (let [path (str (-url-for conn) "/data/" alias "/")
             {:keys [status] :as res} (<! (http/request :post path {:edn true
                                                                    :form {:db-name db-name}}))]
         (cond (instance? js/Error res)
@@ -135,19 +135,19 @@
   "Returns a core.async channel eventually containing the t of the
    the most recent transaction available via this db value."
   [db]
-  (get-basis db))
+  (-basis-t db))
 
 (defn q
   "Execute a query against a database value with inputs. Returns a
    core.async channel that will contain the result of the query, and
    will be closed when the query is complete."
   [query db & inputs]
-  (execute-query db query inputs))
+  (-q db query inputs))
 
 (defn entity
   "Returns a map of the entity's attributes for the given id."
   [db eid]
-  (get-entity db eid))
+  (-entity db eid))
 
 (defn transact
   "Submits a transaction to the database for writing. The transaction
@@ -167,6 +167,64 @@
      :tx-data, the collection of Datums produced by the transaction;
      :tempids, an argument to resolve-tempids."
   [conn tx-data]
-  (execute-transaction! conn (if (string? tx-data) tx-data (prn-str tx-data))))
+  (-transact conn (if (string? tx-data) tx-data (prn-str tx-data))))
 
+;; TODOs
+(comment
 
+  ;; from datomic.api
+
+  (defn delete-database
+    [...])
+
+  (defn rename-database
+    [...])
+
+  (defn datoms
+    [db index & components])
+
+  (defn index-range
+    [db attrid start end])
+
+  (defn history
+    [db])
+
+  (defn entid
+    [db ident])
+
+  (defn entity-db
+    [entity])
+
+  (defn ident
+    [db eid])
+
+  (defn next-t
+    [db])
+
+  (defn part
+    [eid])
+
+  ;; is this possible?
+  (defn request-index
+    [...])
+
+  (defn resolve-tempid
+    [db tempids tempid])
+
+  (defn squuid
+    [])
+
+  (defn squuid-time-millis
+    [squuid])
+
+  (defn t->tx
+    [t])
+
+  (defn tx->t
+    [tx])
+
+  (defn tempid
+    ([partition])
+    ([partition n]))
+
+  )
