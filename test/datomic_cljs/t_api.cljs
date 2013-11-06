@@ -31,8 +31,8 @@
       (satisfies? d/ITransactDatomic (apply d/connect connect-args)))
 
     (let [conn (apply d/connect connect-args)
-          schema (.readFileSync js-fs "test/datomic_cljs/data/friend_schema.edn" "utf8")
-          data (.readFileSync js-fs "test/datomic_cljs/data/friend_data.edn" "utf8")
+          schema (.readFileSync js-fs "resources/friend_schema.edn" "utf8")
+          data (.readFileSync js-fs "resources/friend_data.edn" "utf8")
           schema-tx-data (<? (d/transact conn schema))
           data-tx-data (<? (d/transact conn data))]
 
