@@ -10,12 +10,12 @@
   :cljsbuild {:builds [{:id "dev"
                         :source-paths ["src"]
                         :compiler {:target :nodejs
-                                   :output-to "datomic_cljs_dev.js"
+                                   :output-to "target/datomic_cljs_dev.js"
                                    :optimizations :simple
                                    :pretty-print true}}
                        {:id "test"
                         :source-paths ["src" "test"]
                         :compiler {:target :nodejs
-                                   :output-to "datomic_cljs_test.js"
+                                   :output-to "target/datomic_cljs_test.js"
                                    :optimizations :simple
                                    :pretty-print true}}]})
