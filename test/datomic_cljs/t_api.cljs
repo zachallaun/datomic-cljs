@@ -24,12 +24,11 @@
   (go-test-all
 
     (test "can create a new database"
-      (let [conn (<! (apply d/create-database connect-args))]
+      (let [conn (<? (apply d/create-database connect-args))]
         (satisfies? d/ITransactDatomic conn)))
 
     (test "can connect to an existing database"
-      (let [conn (apply d/connect connect-args)]
-        (satisfies? d/ITransactDatomic conn)))
+      (satisfies? d/ITransactDatomic (apply d/connect connect-args)))
 
     (let [conn (apply d/connect connect-args)
           schema (.readFileSync js-fs "test/datomic_cljs/data/friend_schema.edn" "utf8")
@@ -42,9 +41,8 @@
              (map? data-tx-data)))
 
       (test "can make simple queries"
-        (-> (<? (d/q '[:find ?n :where [?_ :person/name ?n]] (d/db conn)))
-            count
-            (= 3)))
+        (let [result (<? (d/q '[:find ?n :where [?_ :person/name ?n]] (d/db conn)))]
+          (= 3 (count result))))
 
       (test "can query with inputs"
         (-> (<? (d/q '[:find ?e :in $ ?n :where [?e :person/name ?n]]

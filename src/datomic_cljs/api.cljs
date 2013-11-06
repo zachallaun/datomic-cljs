@@ -6,7 +6,7 @@
                    [datomic-cljs.macros :refer [>!x]]))
 
 (defprotocol IQueryDatomic
-  (execute-query [db query-str inputs]))
+  (execute-query [db query inputs]))
 
 (defprotocol IHaveEntities
   (get-entity [db eid]))
@@ -17,47 +17,39 @@
 (defprotocol IBasis
   (get-basis [db]))
 
-(defrecord DatomicConnection [hostname port db-alias]
-  ITransactDatomic
-  (execute-transaction! [_ tx-data-str]
-    ;; TODO: return database values as :db-before and :db-after
-    (http/receive-edn
-     (http/post {:protocol "http:"
-                 :hostname hostname
-                 :port port
-                 :path (str "/data/" db-alias "/")
-                 :headers {"Accept" "application/edn"
-                           "Content-Type" "application/x-www-form-urlencoded"}}
-                {:tx-data tx-data-str}))))
+(defprotocol IUrl
+  (url-for [this]))
 
-(defrecord DatomicDB [connection implicit-args]
+(defrecord DatomicConnection [hostname port db-alias]
+  IUrl
+  (url-for [_]
+    (str "http://" hostname ":" port))
+
+  ITransactDatomic
+  (execute-transaction! [conn tx-data-str]
+    ;; TODO: return database values as :db-before and :db-after
+    (let [path (str (url-for conn) "/data/" db-alias "/")]
+      (http/body
+       (http/request :post path {:edn true
+                                 :form {:tx-data tx-data-str}})))))
+
+(defrecord DatomicDB [conn implicit-args]
   IQueryDatomic
-  (execute-query [_ q-str inputs]
-    (let [args-str (-> implicit-args
-                       (cons inputs)
-                       (vec)
-                       (prn-str))
-          encoded-q-str (http/encode-query {:q q-str :args args-str})
-          path (str "/api/query?" encoded-q-str)]
-      (http/receive-edn
-       (http/get {:protocol "http:"
-                  :hostname (:hostname connection)
-                  :port (:port connection)
-                  :path path
-                  :headers {"Accept" "application/edn"}}))))
+  (execute-query [_ query inputs]
+    (let [args (vec (cons implicit-args inputs))
+          path (str (url-for conn) "/api/query")]
+      (http/body
+       (http/request :get path {:edn true
+                                :qs {:q (prn-str query) :args (prn-str args)}}))))
 
   IHaveEntities
   (get-entity [_ eid]
-    (let [path (->> (http/encode-query {:e eid
-                                        :as-of (:as-of implicit-args)
-                                        :since (:since implicit-args)})
-                    (str "/data/" (:db/alias implicit-args) "/-/entity?"))]
-      (http/receive-edn
-       (http/get {:protocol "http:"
-                  :hostname (:hostname connection)
-                  :port (:port connection)
-                  :path path
-                  :headers {"Accept" "application/edn"}}))))
+    (let [path (str (url-for conn) "/data/" (:db/alias implicit-args) "/-/entity")]
+      (http/body
+       (http/request :get path {:edn true
+                                :qs {:e eid
+                                     :as-of (:as-of implicit-args)
+                                     :since (:since implicit-args)}}))))
 
   IBasis
   (get-basis [_]
@@ -65,16 +57,13 @@
       (go
         (if (:as-of implicit-args)
           (>!x c-basis (:as-of implicit-args))
-          (let [res (<! (http/receive-edn
-                         (http/get {:protocol "http:"
-                                    :hostname (:hostname connection)
-                                    :port (:port connection)
-                                    :path (str "/data/" (:db-alias connection)
-                                               "/" (or (:as-of implicit-args) "-") "/")
-                                    :headers {"Accept" "application/edn"}})))]
+          (let [path (str (url-for conn)
+                          "/data/" (:db-alias conn)
+                          "/" (or (:as-of implicit-args) "-") "/")
+                res (<! (http/request :get path {:edn true}))]
             (if (instance? js/Error res)
               (>!x c-basis res)
-              (>!x c-basis (:basis-t res))))))
+              (>!x c-basis (-> res :body :basis-t))))))
       c-basis)))
 
 (defn connect
@@ -85,8 +74,8 @@
      port, the port on which the REST service is listening;
      alias, the transactor alias;
      dbname, the name of the database being connected to."
-  [hostname port alias dbname]
-  (->DatomicConnection hostname port (str alias "/" dbname)))
+  [hostname port alias db-name]
+  (->DatomicConnection hostname port (str alias "/" db-name)))
 
 (defn create-database
   "Create or connect to a Datomic database via a Datomic REST service
@@ -95,25 +84,21 @@
      hostname, e.g. localhost;
      port, the port on which the REST service is listening;
      alias, the transactor alias;
-     dbname, the name of the database being created.
+     db-name, the name of the database being created.
 
    Returns a core.async channel eventually containing a database
    connection (as if using datomic-cljs.api/connect), or an error."
-  [hostname port alias dbname]
-  (let [c-conn (async/chan 1)]
+  [hostname port alias db-name]
+  (let [c-conn (async/chan 1)
+        conn (connect hostname port alias db-name)]
     (go
-      (let [{:keys [status] :as res}
-            (<! (http/post {:protocol "http:"
-                            :hostname hostname
-                            :port port
-                            :path (str "/data/" alias "/")
-                            :headers {"Accept" "application/edn"
-                                      "Content-Type" "application/x-www-form-urlencoded"}}
-                           {:db-name dbname}))]
+      (let [path (str (url-for conn) "/data/" alias "/")
+            {:keys [status] :as res} (<! (http/request :post path {:edn true
+                                                                   :form {:db-name db-name}}))]
         (cond (instance? js/Error res)
                 (>!x c-conn res)
               (or (= status 200) (= status 201))
-                (>!x c-conn (connect hostname port alias dbname))
+                (>!x c-conn conn)
               :else
                 (>!x c-conn (js/Error.
                              (str "Could not create or connect to db: " status))))))
@@ -121,14 +106,14 @@
 
 (defn db
   "Creates an abstract Datomic value that can be queried."
-  [{:keys [db-alias] :as connection}]
-  (->DatomicDB connection {:db/alias db-alias}))
+  [{:keys [db-alias] :as conn}]
+  (->DatomicDB conn {:db/alias db-alias}))
 
 (defn as-of
   "Returns the value of the database as of some point t, inclusive.
    t can be a transaction number, transaction ID, or inst."
-  [{:keys [connection implicit-args]} t]
-  (->DatomicDB connection (assoc implicit-args :as-of t)))
+  [{:keys [conn implicit-args]} t]
+  (->DatomicDB conn (assoc implicit-args :as-of t)))
 
 (defn as-of-t
   "Returns the as-of point, or nil if none."
@@ -138,8 +123,8 @@
 (defn since
   "Returns the value of the database since some point t, exclusive.
    t can be a transaction number, transaction ID, or inst."
-  [{:keys [connection implicit-args]} t]
-  (->DatomicDB connection (assoc implicit-args :since t)))
+  [{:keys [conn implicit-args]} t]
+  (->DatomicDB conn (assoc implicit-args :since t)))
 
 (defn since-t
   "Returns the since point, or nil if none."
@@ -157,7 +142,7 @@
    core.async channel that will contain the result of the query, and
    will be closed when the query is complete."
   [query db & inputs]
-  (execute-query db (prn-str query) inputs))
+  (execute-query db query inputs))
 
 (defn entity
   "Returns a map of the entity's attributes for the given id."
@@ -181,8 +166,7 @@
      :db-after, the database value after the transaction;
      :tx-data, the collection of Datums produced by the transaction;
      :tempids, an argument to resolve-tempids."
-  [connection tx-data]
-  (execute-transaction! connection (if (string? tx-data)
-                                     tx-data
-                                     (prn-str tx-data))))
+  [conn tx-data]
+  (execute-transaction! conn (if (string? tx-data) tx-data (prn-str tx-data))))
+
 
