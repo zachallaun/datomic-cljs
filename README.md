@@ -1,8 +1,8 @@
 # Datomic on ClojureScript
 
-The goal of **datomic-cljs** is to provide an interface to Datomic that is as close as possible to the native Clojure [peer API](http://docs.datomic.com/clojure/index.html).
+The goal of datomic-cljs is to provide an interface to Datomic that is as close as possible to the native Clojure [peer API](http://docs.datomic.com/clojure/index.html).
 This is accomplished by approximating Clojure's blocking API with [core.async](https://github.com/clojure/core.async).
-**datomic-cljs** currently targets Node.js, though browser support is a possible future feature.
+datomic-cljs currently targets Node.js, though browser support is a possible future feature.
 
 _**Warning:** This is incomplete, alpha software. Anything is subject to change._
 
@@ -39,7 +39,7 @@ This will transitively include core.async, but you'll likely want to specify you
 
 ## Using Datomic REST
 
-**datomic-cljs** talks to a Datomic database by way of the Datomic REST service.
+datomic-cljs talks to a Datomic database by way of the Datomic REST service.
 Datomic REST is a standalone server that sits in front of a transactor and exposes Datomic via HTTP.
 For the sake of these examples, I'll assume that you're using Datomic Free and that you have a `DATOMIC_HOME` environment variable set, pointing to the directory of your peer library.
 
@@ -60,7 +60,7 @@ The `rest` script accepts repeated alias/transactor pairs; you'll refer to the a
 
 ## API
 
-In general, **datomic-cljs** exposes the same API as its Clojure counterpart, except that any operation that requires hitting the REST API returns a core.async channel.
+In general, datomic-cljs exposes the same API as its Clojure counterpart, except that any operation that requires hitting the REST API returns a core.async channel.
 
 ### Error Handling
 
