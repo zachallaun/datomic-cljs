@@ -22,7 +22,7 @@
 
       ;; Find Caroll's entity id.
       (let [caroll-eid (ffirst (<? (d/q '[:find ?e :where [?e :person/name "Caroll"]]
-                                 (d/db conn))))]
+                                        (d/db conn))))]
 
         ;; Using her entity id, get her entity map, and use that to
         ;; see all her friends.
