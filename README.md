@@ -9,7 +9,7 @@
 
 The goal of datomic-cljs is to provide an interface to Datomic that is as close as possible to the native [Clojure API](http://docs.datomic.com/clojure/index.html).
 This is accomplished by approximating Clojure's blocking API with [core.async](https://github.com/clojure/core.async).
-datomic-cljs currently targets Node.js, though browser support is a possible future feature.
+datomic-cljs currently targets Node.js, though browser support should be available in the future.
 
 _**Warning:** This is incomplete, alpha software. Anything is subject to change._
 
@@ -156,6 +156,7 @@ Other things:
 
 1. A new namespace `datomic-cljs.edn` and an accompanying `read-string` might be warranted to support tagged literals like `#db/id`.
 2. Support for REST API-specific things like limiting results.
+3. Browser support. This should be easy enough since platform-specific stuff is confined to `datomic-cljs.http`, but there are other issues (like authentication) to consider.
 
 ## Development
 
