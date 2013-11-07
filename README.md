@@ -66,7 +66,7 @@ It's worth noting that once you have the service running, you can visit http://l
 In general, datomic-cljs exposes the same API as its Clojure counterpart, except that any operation that requires hitting the REST API returns a core.async channel.
 To learn more about core.async, I recommend David Nolen's article [Communicating Sequential Processes](http://swannodette.github.io/2013/07/12/communicating-sequential-processes/) and the [core.async API documentation](http://clojure.github.io/core.async/).
 
-See [friends.cljs](/examples/friends.cljs) for an example of much of what follows.
+See [examples/friends.cljs](/examples/friends.cljs) for an example of much of what follows.
 
 ### Namespaces of Interest
 
@@ -90,8 +90,7 @@ To create a connection to an existing database, use `datomic-cljs.api/connect`.
                      "friends")) ;; database name
 ```
 
-To create a new database, use `datomic-cljs.api/create-database`.
-The function `datomic-cljs.api/create-database` accepts the same arguments as `connect`, but will attempt to create a new database or connect to it if it already exists.
+The function `datomic-cljs.api/create-database` accepts the same arguments as `connect`, but will attempt to create a new database, connecting to it if it already exists.
 It returns a core.async channel that will eventually contain either a database connection or an error.
 
 ```clj
@@ -100,31 +99,26 @@ It returns a core.async channel that will eventually contain either a database c
     ...))
 ```
 
-### Accessing a Database Value
-
-To access the current value of the database referred to by `conn`, use `datomic-cljs.api/db`.
-
-```clj
-(d/db conn)
-```
-
-datomic-cljs also supports database values that are `as-of` or `since` a transaction or instant.
-
-```clj
-(d/as-of (d/db conn) #inst "2012")
-(d/since (d/db conn) #inst "2013")
-```
-
-### Query, Entity, and Transactions
+### Database Values, Query, Entity, and Transactions
 
 For the most part, these are quite similar to their Clojure API counterparts, except that they return core.async channels eventually containing either results or errors.
-See the [Datomic reference](http://docs.datomic.com/) for more information on what's possible.
+(See the [Datomic reference](http://docs.datomic.com/) for more information on what's possible.)
 
 However, `datomic-cljs.api/entity` differs in two ways.
 First, its result is eventually just a plain hash-map, in contrast to the Clojure API's lazily-evaluating, hash-map-like Entity object.
 The second difference is a consequence of the first: entity attributes that are refs to other entities will not contain nested entity maps, but instead entity ids.
 This is due to the possibility of circular references.
 To access nested entities, you'll have to pass the entity ids back to `datomic-cljs.api/entity`.
+
+```clj
+(go
+  (let [db (d/db conn)
+        [[eid]] (<? (d/q '[:find ?e :where [?e :person/name "Caroll"]] db))
+        friends (->> (<? (d/entity db eid))
+                     :person/friends
+                     (map #(d/entity db %)))]
+    (<? (first friends))))
+```
 
 ### Error Handling
 
