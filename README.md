@@ -2,7 +2,8 @@
 **[Minimum Viable Snippet](#minimum-viable-snippet)** |
 **[Using Datomic REST](#using-datomic-rest)** |
 **[API Overview](#api-overview)** |
-**[To Do](#to-do)**
+**[To Do](#to-do)** |
+**[Development](#development)**
 
 # ClojureScript, meet Datomic
 
@@ -157,3 +158,16 @@ Other things:
 
 1. A new namespace `datomic-cljs.edn` and an accompanying `read-string` might be warranted to support tagged literals like `#db/id`.
 2. Support for REST API-specific things like limiting results.
+
+## Development
+
+Development has been done against Node.js `v0.10.21`.
+
+The tests can be built with `lein-cljsbuild` and run with `node`. The tests pass if you see no errors.
+
+```clj
+$ lein cljsbuild once test
+$ node target/datomic_cljs_test.js
+```
+
+Testing assumptions are documented at the top of [t_api.cljs](https://github.com/zachallaun/datomic-cljs/blob/master/test/datomic_cljs/t_api.cljs#L10).
