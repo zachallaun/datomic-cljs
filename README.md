@@ -20,7 +20,7 @@ Add the following dependency your `project.clj`:
 [com.zachallaun/datomic-cljs "TODO"]
 ```
 
-This will transitively include core.async, but you'll likely want to specify your own version; it's a fast-moving target.
+This will transitively include core.async, but you'll likely want to specify your own version since it's a fast-moving target.
 
 ## Minimum Viable Snippet
 
@@ -31,7 +31,7 @@ This will transitively include core.async, but you'll likely want to specify you
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
 (go
-  (let [conn (d/connect "localhost" 9898 "db" "friends")
+  (let [conn (d/connect "localhost" 9898 "local" "friends")
         eid (ffirst (<! (d/q '[:find ?e :where [?e :person/name "Frank"]]
                              (d/db conn))))]
     (<! (d/transact conn [[:db/add eid :person/name "Franky"]]))))
@@ -86,7 +86,7 @@ To create a connection to an existing database, use `datomic-cljs.api/connect`.
 ```clj
 (def conn (d/connect "localhost" ;; hostname of your running REST service
                      9898        ;; port
-                     "db"        ;; transactor alias
+                     "local"     ;; transactor alias
                      "friends")) ;; database name
 ```
 
@@ -96,7 +96,7 @@ It returns a core.async channel that will eventually contain either a database c
 
 ```clj
 (go
-  (let [conn (<? (d/create-database "localhost" 9898 "db" "friends"))]
+  (let [conn (<? (d/create-database "localhost" 9898 "local" "friends"))]
     ...))
 ```
 
@@ -146,7 +146,7 @@ We could rewrite the Minimum Viable Snippet above to handle errors like so:
 
 (go
   (try
-    (let [conn (d/connect "localhost" 9898 "db" "friends")
+    (let [conn (d/connect "localhost" 9898 "local" "friends")
           eid (ffirst (<? (d/q '[:find ?e :where [?e :person/name "Frank"]]
                                (d/db conn))))]
       (<? (d/transact conn [[:db/add eid :person/name "Franky"]])))
