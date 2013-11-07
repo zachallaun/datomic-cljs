@@ -5,7 +5,7 @@
   (:require-macros [cljs.core.async.macros :refer [go]]
                    [datomic-cljs.macros :refer [<?]]))
 
-(def  js-fs (nodejs/require "fs"))
+(def js-fs (nodejs/require "fs"))
 
 (def friend-schema (.readFileSync js-fs "resources/friend_schema.edn" "utf8"))
 (def friend-data (.readFileSync js-fs "resources/friend_data.edn" "utf8"))
