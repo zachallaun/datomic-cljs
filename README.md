@@ -150,11 +150,10 @@ We could rewrite the Minimum Viable Snippet above to handle errors like so:
 
 ## To Do
 
-There is a _lot_ left to be done.
-What I have now are the bones of the API, but very little of the flesh.
+There's a lot left to be done.
+What I have now are the bones of the API. There's a big list of planned functionality at the bottom of [api.cljs](/src/datomic_cljs/api.cljs).
 
-Not everything can be done through the Datomic REST api, but see the bottom of [api.cljs](/src/datomic_cljs/api.cljs) for a list of planned functionality.
+Other things:
 
-A new namespace `datomic-cljs.edn` and an accompanying `read-string` might be warranted to support tagged literals like `#db/id`.
-
-Support for REST API-specific things like limiting results.
+1. A new namespace `datomic-cljs.edn` and an accompanying `read-string` might be warranted to support tagged literals like `#db/id`.
+2. Support for REST API-specific things like limiting results.
