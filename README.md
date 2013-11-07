@@ -21,8 +21,6 @@ Add the following dependency your `project.clj`:
 [com.zachallaun/datomic-cljs "TODO"]
 ```
 
-This will transitively include core.async, but you'll likely want to specify your own version since it's a fast-moving target.
-
 ## Minimum Viable Snippet
 
 ```clj
