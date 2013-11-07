@@ -7,7 +7,7 @@
                  [org.clojure/clojurescript "0.0-1978"]
                  [org.clojure/core.async "0.1.242.0-44b1e3-alpha"]]
 
-  :profiles {:dev {:plugins [[lein-cljsbuild "1.0.0-SNAPSHOT"]]}}
+  :profiles {:dev {:plugins [[lein-cljsbuild "1.0.0-alpha2"]]}}
 
   :cljsbuild {:builds {:example
                        {:source-paths ["src" "examples"]
