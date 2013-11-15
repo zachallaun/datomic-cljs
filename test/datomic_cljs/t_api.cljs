@@ -85,9 +85,12 @@
           (and (number? t)
                (= (dec t) (<? (d/basis-t (d/as-of (d/db conn) (dec t))))))))
 
-      (test "can get entity ids from idents"
-        (number? (<? (d/entid (d/db conn) :person/age)))
-        (= 12345 (<? (d/entid (d/db conn) 12345)))))))
+      (test "can get entity ids from idents and vice versa"
+        (let [eid (<? (d/entid (d/db conn) :person/age))]
+          (and (number? eid)
+               (= :person/age (<? (d/ident (d/db conn) eid)))))
+        (= 12345       (<? (d/entid (d/db conn) 12345)))
+        (= :person/age (<? (d/ident (d/db conn) :person/age)))))))
 
 (if http/node-context?
   (let [js-fs (js/require "fs")]

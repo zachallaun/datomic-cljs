@@ -1,5 +1,6 @@
 (ns datomic-cljs.api
   (:require [datomic-cljs.http :as http]
+            [datomic-cljs.util :as util]
             [cljs.core.async :as async :refer [>! <!]]
             [cljs.reader :as reader])
   (:require-macros [cljs.core.async.macros :refer [go]]
@@ -165,32 +166,6 @@
   [db]
   (-basis-t db))
 
-(defn q
-  "Execute a query against a database value with inputs. Returns a
-   core.async channel that will contain the result of the query, and
-   will be closed when the query is complete."
-  [query db & inputs]
-  (-q db query inputs))
-
-(defn entity
-  "Returns a map of the entity's attributes for the given id."
-  [db eid]
-  (-entity db eid))
-
-(defn entid
-  "Returns a core.async channel that will contain the entity id
-   associated with a symbolic keyword, or the id itself if passed."
-  [db ident]
-  (let [c-res (async/chan 1)]
-    (go
-      (if (number? ident)
-        (>!x c-res ident)
-        (let [res (<! (q '[:find ?e :in $ ?ident :where [?e ?ident]] db ident))]
-          (if (instance? js/Error res)
-            (>!x c-res res)
-            (>!x c-res (ffirst res))))))
-    c-res))
-
 (defn transact
   "Submits a transaction to the database for writing. The transaction
    data is sent to the Transactor and, if transactAsync, processed
@@ -210,6 +185,44 @@
      :tempids, an argument to resolve-tempids."
   [conn tx-data]
   (-transact conn (if (string? tx-data) tx-data (prn-str tx-data))))
+
+(defn q
+  "Execute a query against a database value with inputs. Returns a
+   core.async channel that will contain the result of the query, and
+   will be closed when the query is complete."
+  [query db & inputs]
+  (-q db query inputs))
+
+(defn- q-ffirst
+  [query db & inputs]
+  (let [c-res (async/chan 1)]
+    (go
+      (let [res (<! (apply q query db inputs))]
+        (if (instance? js/Error res)
+            (>!x c-res res)
+            (>!x c-res (ffirst res)))))
+    c-res))
+
+(defn entity
+  "Returns a map of the entity's attributes for the given id."
+  [db eid]
+  (-entity db eid))
+
+(defn entid
+  "Returns a core.async channel that will contain the entity id
+   associated with a symbolic keyword, or the id itself if passed."
+  [db ident]
+  (if (number? ident)
+    (util/singleton-chan ident)
+    (q-ffirst '[:find ?e :in $ ?ident :where [?e :db/ident ?ident]] db ident)))
+
+(defn ident
+  "Returns a core.async channel that will contain the ident
+   associated with an entity id, or the ident itself if passed."
+  [db eid]
+  (if (keyword? eid)
+    (util/singleton-chan eid)
+    (q-ffirst '[:find ?ident :in $ ?e :where [?e :db/ident ?ident]] db eid)))
 
 
 ;; TODOs
@@ -231,9 +244,6 @@
 
   (defn entity-db
     [entity])
-
-  (defn ident
-    [db eid])
 
   (defn next-t
     [db])
