@@ -5,6 +5,30 @@
   (:require-macros [cljs.core.async.macros :refer [go]]
                    [datomic-cljs.macros :refer [>!x]]))
 
+
+;;; Tagged literals
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftype DbId [spec]
+  Object
+  (toString [_]
+    (str "#db/id" spec))
+
+  IPrintWithWriter
+  (-pr-writer [this writer _]
+    (-write writer (str this))))
+
+(defn- read-dbid
+  [spec]
+  (if (vector? spec)
+    (DbId. spec)
+    (reader/reader-error nil "db/id literal expects a vector as its representation.")))
+
+(reader/register-tag-parser! "db/id" read-dbid)
+
+;;; Protocols/implementations
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defprotocol IQueryDatomic
   (-q [db query inputs]))
 
@@ -65,6 +89,10 @@
               (>!x c-basis res)
               (>!x c-basis (-> res :body :basis-t))))))
       c-basis)))
+
+
+;;; Mimicking datomic.api
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn connect
   "Create an abstract connection to a Datomic REST service by passing
@@ -188,9 +216,6 @@
 (comment
 
   ;; from datomic.api
-
-  #db/id[:db.part/db]
-  #db/id[:db.part/db -1]
 
   (defn datoms
     [db index & components])

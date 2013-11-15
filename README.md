@@ -156,12 +156,11 @@ For missing pieces of the API, see the bottom of [api.cljs](/src/datomic_cljs/ap
 
 Things we don't have but probably should:
 
-1. A new `datomic-cljs.edn` namespace and an accompanying `read-string` to support tagged literals like `#db/id[:db.part/db -1]`.
-2. API support for REST-specific things like limiting the results of query.
-3. For the browser, either some kind of authentication story or a path to one.
+1. API support for REST-specific things like limiting the results of query.
+- For the browser, either some kind of authentication story or a path to one.
 Transaction is currently wide open.
 (This may belong in another library.)
-4. Much better test coverage, including things like malformed input.
+- Much better test coverage, including things like malformed input.
 
 ## Development
 

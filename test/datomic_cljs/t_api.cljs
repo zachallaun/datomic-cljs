@@ -2,6 +2,7 @@
   (:refer-clojure :exclude [test])
   (:require [datomic-cljs.api :as d]
             [datomic-cljs.http :as http]
+            [cljs.reader :as reader]
             [cljs.core.async :as async :refer [<! >!]])
   (:require-macros [cljs.core.async.macros :refer [go]]
                    [datomic-cljs.macros :refer [<?]]
@@ -22,6 +23,16 @@
 
 (defn all-the-tests [schema data]
   (go-test-all
+
+    (test "can read and print db/id tagged literals"
+      (try
+        (reader/read-string "#db/id :foo")
+        false
+        (catch js/Error e
+          true))
+      (instance? d/DbId (reader/read-string "#db/id[:db.part/db]"))
+      (= "#db/id[:db.part/db]"    (str (reader/read-string "#db/id[:db.part/db]")))
+      (= "#db/id[:db.part/db -1]" (str (reader/read-string "#db/id[:db.part/db -1]"))))
 
     (test "can create a new database"
       (let [conn (<? (apply d/create-database connect-args))]
