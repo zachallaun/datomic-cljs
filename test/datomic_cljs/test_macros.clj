@@ -2,10 +2,10 @@
   (:refer-clojure :exclude [test]))
 
 (defmacro test
-  [s assertion]
-  (let [message (str "Test failed: " s "\n" assertion "\n")]
-    `(let [val# ~assertion]
-       (when-not val#
+  [s & assertions]
+  (let [message (str "Test failed: " s "\n" assertions "\n")]
+    `(let [vals# ~(vec assertions)]
+       (when-not (every? identity vals#)
          (throw (js/Error. ~message))))))
 
 (defmacro go-test-all

@@ -149,6 +149,20 @@
   [db eid]
   (-entity db eid))
 
+(defn entid
+  "Returns a core.async channel that will contain the entity id
+   associated with a symbolic keyword, or the id itself if passed."
+  [db ident]
+  (let [c-res (async/chan 1)]
+    (go
+      (if (number? ident)
+        (>!x c-res ident)
+        (let [res (<! (q '[:find ?e :in $ ?ident :where [?e ?ident]] db ident))]
+          (if (instance? js/Error res)
+            (>!x c-res res)
+            (>!x c-res (ffirst res))))))
+    c-res))
+
 (defn transact
   "Submits a transaction to the database for writing. The transaction
    data is sent to the Transactor and, if transactAsync, processed
@@ -168,6 +182,7 @@
      :tempids, an argument to resolve-tempids."
   [conn tx-data]
   (-transact conn (if (string? tx-data) tx-data (prn-str tx-data))))
+
 
 ;; TODOs
 (comment
@@ -189,8 +204,8 @@
   (defn history
     [db])
 
-  (defn entid
-    [db ident])
+  (defn entid-at
+    [db part t-or-date])
 
   (defn entity-db
     [entity])

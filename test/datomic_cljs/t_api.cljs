@@ -72,7 +72,11 @@
       (test "can access the basis-t of a db"
         (let [t (<? (d/basis-t (d/db conn)))]
           (and (number? t)
-               (= (dec t) (<? (d/basis-t (d/as-of (d/db conn) (dec t)))))))))))
+               (= (dec t) (<? (d/basis-t (d/as-of (d/db conn) (dec t))))))))
+
+      (test "can get entity ids from idents"
+        (number? (<? (d/entid (d/db conn) :person/age)))
+        (= 12345 (<? (d/entid (d/db conn) 12345)))))))
 
 (if http/node-context?
   (let [js-fs (js/require "fs")]
