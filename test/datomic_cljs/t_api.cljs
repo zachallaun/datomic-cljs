@@ -1,8 +1,8 @@
 (ns datomic-cljs.t-api
   (:refer-clojure :exclude [test])
   (:require [datomic-cljs.api :as d]
-            [cljs.core.async :as async :refer [<! >!]]
-            [cljs.nodejs :as nodejs])
+            [datomic-cljs.http :as http]
+            [cljs.core.async :as async :refer [<! >!]])
   (:require-macros [cljs.core.async.macros :refer [go]]
                    [datomic-cljs.macros :refer [<?]]
                    [datomic-cljs.test-macros :refer [go-test-all test]]))
@@ -12,15 +12,15 @@
 ;; 2. it has a transactor alias called 'db'
 ;; 3. you don't care that a bunch of random test dbs are going
 ;;    to be created; we can't delete them yet from the REST api
-
-(def ^:private js-fs (nodejs/require "fs"))
+;; 4. if you're running this in the browser, you've set up CORS
+;;    permissions; see "Using Datomic REST" in the README
 
 (def test-db-name (str "datomic-cljs-test-" (rand-int 1e8)))
-(println "Starting tests using db" test-db-name)
+(.log js/console "Starting tests using db" test-db-name)
 
 (def connect-args ["localhost" 9898 "db" test-db-name])
 
-(defn all-the-tests []
+(defn all-the-tests [schema data]
   (go-test-all
 
     (test "can create a new database"
@@ -31,8 +31,6 @@
       (satisfies? d/ITransactDatomic (apply d/connect connect-args)))
 
     (let [conn (apply d/connect connect-args)
-          schema (.readFileSync js-fs "resources/friend_schema.edn" "utf8")
-          data (.readFileSync js-fs "resources/friend_data.edn" "utf8")
           schema-tx-data (<? (d/transact conn schema))
           data-tx-data (<? (d/transact conn data))]
 
@@ -76,8 +74,15 @@
           (and (number? t)
                (= (dec t) (<? (d/basis-t (d/as-of (d/db conn) (dec t)))))))))))
 
-(set! *main-cli-fn* all-the-tests)
-
+(if http/node-context?
+  (let [js-fs (js/require "fs")]
+    (set! *main-cli-fn* (fn []
+                          (all-the-tests (.readFileSync js-fs "resources/friend_schema.edn" "utf8")
+                                         (.readFileSync js-fs "resources/friend_data.edn" "utf8")))))
+  (go
+    (let [schema (<! (http/body (http/request :get "/resources/friend_schema.edn")))
+          data   (<! (http/body (http/request :get "/resources/friend_data.edn")))]
+      (all-the-tests schema data))))
 
 
 (comment

@@ -23,4 +23,4 @@
         (let [~exs-gen (atom [])]
           ~@tests
           (deref ~exs-gen)))
-      println)))
+      #(.log js/console (prn-str %)))))

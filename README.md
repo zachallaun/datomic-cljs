@@ -9,7 +9,7 @@
 
 The goal of datomic-cljs is to provide an interface to Datomic that is as close as possible to the native [Clojure API](http://docs.datomic.com/clojure/index.html).
 This is accomplished by approximating Clojure's blocking API with [core.async](https://github.com/clojure/core.async).
-datomic-cljs currently targets Node.js, though browser support should be available in the future.
+datomic-cljs supports both Node.js and modern browsers.
 
 _**Warning:** This is incomplete, alpha software. Anything is subject to change._
 
@@ -50,9 +50,11 @@ $ $DATOMIC_HOME/bin/transactor $DATOMIC_HOME/config/samples/free-transactor-temp
 
 By default, this will start a Datomic Free transactor at `datomic:free://localhost:4334/`.
 With a transactor in place, you can start the Datomic REST service.
+If you're planning to use datomic-cljs in the browser, you'll have to include the `--origins` flag to specify allowed origins for cross-origin resource sharing.
+If you're planning to use datomic-cljs on node, `--origins` can be omitted from the following.
 
 ```sh
-$ $DATOMIC_HOME/bin/rest local datomic:free://localhost:4334/
+$ $DATOMIC_HOME/bin/rest --port 9898 --origins http://0.0.0.0:8000 local datomic:free://localhost:4334/
 ```
 
 The `rest` script accepts repeated alias/transactor pairs; you'll refer to the alias (in this case, `local`) to specify a transactor when interacting with the REST API.
@@ -160,13 +162,28 @@ Other things:
 
 ## Development
 
-Development has been done against Node.js `v0.10.21`.
+I've developed a super-awesome testing infrastructure to manage node/browser compatibility.
+It involves shoving errors into a vector and printing it.
+If the vector's empty, there are no errors and you may rejoice.
 
-The tests can be built with `lein-cljsbuild` and run with `node`. The tests pass if you see no errors.
+First, testing assumptions are documented at the top of [t_api.cljs](https://github.com/zachallaun/datomic-cljs/blob/master/test/datomic_cljs/t_api.cljs#L10).
 
-```clj
-$ lein cljsbuild once test
-$ node target/datomic_cljs_test.js
+To build the tests, run the following.
+You know what?
+Go ahead and run the Node tests while you're at it.
+They're easy.
+
+```sh
+$ lein cljsbuild once
+$ node target/test.js
 ```
 
-Testing assumptions are documented at the top of [t_api.cljs](https://github.com/zachallaun/datomic-cljs/blob/master/test/datomic_cljs/t_api.cljs#L10).
+To run the tests in your favorite browser, start serving the project root and navigate to the index.
+Open the console to see test results.
+
+```sh
+$ python -m SimpleHTTPServer 8000 # then visit 0.0.0.0:8000
+```
+
+_Note:_ You may see nasty CORS-related errors in the browser tests, but worry not.
+They're unavoidable, and we're just testing what happens when things go wrong.

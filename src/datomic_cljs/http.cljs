@@ -1,12 +1,92 @@
 (ns datomic-cljs.http
-  (:refer-clojure :exclude [get])
-  (:require [cljs.nodejs :as nodejs]
-            [cljs.core.async :as async :refer [<!]]
-            [cljs.reader :as reader])
+  (:require [cljs.core.async :as async :refer [<!]]
+            [cljs.reader :as reader]
+            [clojure.string :as str])
   (:require-macros [cljs.core.async.macros :refer [go]]
                    [datomic-cljs.macros :refer [>!x]]))
 
-(def ^:private js-request (nodejs/require "request"))
+(def node-context?
+  (and (exists? js/exports)
+       (not= js/exports (this-as context (.-exports context)))))
+
+;;; browser shims
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn- urlencode-kvs [kvs]
+  (->> (for [[k v] kvs
+             :when (not (nil? v))]
+         (str (js/encodeURIComponent (name k))
+              "="
+              (js/encodeURIComponent v)))
+       (str/join "&")))
+
+(defn- urlencode-qs [qs-kvs]
+  (str "?" (urlencode-kvs qs-kvs)))
+
+(defn- parse-headers [header-str]
+  (into {} (for [header (str/split-lines header-str)
+                 :let [[k v] (str/split header #":")
+                       [k v] [(str/trim k) (str/trim v)]]]
+             [(keyword (str/lower-case k)) v])))
+
+(defn- browser-request [{:keys [method uri headers qs form]
+                         :or {method "GET" headers {}}
+                         :as opts}
+                        callback]
+  (let [js-req (js/XMLHttpRequest.)
+        query-str (if qs (urlencode-qs qs) "")
+        url (str uri query-str)
+        headers (if form
+                  (assoc headers "Content-Type" "application/x-www-form-urlencoded")
+                  headers)]
+
+    (.addEventListener js-req "load"
+                       (fn []
+                         ;; emulate node response... sort of
+                         (set! (.-headers js-req)
+                               (parse-headers (.getAllResponseHeaders js-req)))
+                         (set! (.-statusCode js-req) (.-status js-req))
+                         (callback nil js-req (.-response js-req))))
+
+    ;; The REST server 'sploding probably results in a CORS error on our end
+    (.addEventListener js-req "error"
+                       (fn [e]
+                         (.preventDefault e)
+                         (callback e js-req nil)))
+
+    (.open js-req method url true)
+
+    (doseq [[k v] (or headers {})]
+      (.setRequestHeader js-req (name k) v))
+
+    (set! (.-responseType js-req) "text")
+
+    (if form
+      (.send js-req (urlencode-kvs form))
+      (.send js-req))))
+
+
+(def ^:private js-request nil)
+(if node-context?
+  (set! js-request (let [req (js/require "request")]
+                     (fn [opts cb]
+                       (req (clj->js opts) cb))))
+  (set! js-request browser-request))
+
+(defn- response-handler [c-resp edn?]
+  (fn [err resp body]
+    (async/put!
+     c-resp
+     (or err
+         (let [headers (js->clj (.-headers resp)
+                                :keywordize-keys true)]
+           {:status (.-statusCode resp)
+            :headers headers
+            :body (if (and edn? (re-find #"edn" (:content-type headers)))
+                    (reader/read-string body)
+                    body)
+            :js-resp resp}))
+     #(async/close! c-resp))))
 
 (defn request
   "Make an async request to the given uri, returning a core.async
@@ -38,19 +118,8 @@
                   :headers (if edn?
                              (assoc (or headers {}) :accept "application/edn")
                              headers))]
-       (js-request (clj->js (assoc opts :uri uri))
-                   (fn [err resp body]
-                     (go
-                       (>!x c-resp
-                            (or err
-                                (let [headers (js->clj (.-headers resp)
-                                                       :keywordize-keys true)]
-                                  {:status (.-statusCode resp)
-                                   :headers headers
-                                   :body (if (and edn? (re-find #"edn" (:content-type headers)))
-                                           (reader/read-string body)
-                                           body)
-                                   :js-resp resp}))))))
+       (js-request (assoc opts :uri uri)
+                   (response-handler c-resp edn?))
        c-resp)))
 
 (defn body
