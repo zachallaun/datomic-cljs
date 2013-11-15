@@ -189,11 +189,8 @@
 
   ;; from datomic.api
 
-  (defn delete-database
-    [...])
-
-  (defn rename-database
-    [...])
+  #db/id[:db.part/db]
+  #db/id[:db.part/db -1]
 
   (defn datoms
     [db index & components])
@@ -219,9 +216,9 @@
   (defn part
     [eid])
 
-  ;; is this possible?
-  (defn request-index
-    [...])
+  (defn tx-report-queue
+    "queue is a core.async channel"
+    [conn])
 
   (defn resolve-tempid
     [db tempids tempid])
@@ -241,5 +238,13 @@
   (defn tempid
     ([partition])
     ([partition n]))
+
+  ;; these might not be possible through the REST api
+  (defn delete-database
+    [...])
+  (defn rename-database
+    [...])
+  (defn request-index
+    [...])
 
   )

@@ -2,7 +2,7 @@
 **[Minimum Viable Snippet](#minimum-viable-snippet)** |
 **[Using Datomic REST](#using-datomic-rest)** |
 **[API Overview](#api-overview)** |
-**[To Do](#to-do)** |
+**[Limitations](#limitations)** |
 **[Development](#development)**
 
 # ClojureScript, meet Datomic
@@ -149,16 +149,19 @@ We could rewrite the Minimum Viable Snippet above to handle errors like so:
       (println "Something went wrong!"))))
 ```
 
-## To Do
+## Limitations
 
-There's a lot left to be done.
-What I have now are the bones of the API. There's a big list of planned functionality at the bottom of [api.cljs](/src/datomic_cljs/api.cljs).
+There's a fair amount left to be done, and a number of current limitations.
+For missing pieces of the API, see the bottom of [api.cljs](/src/datomic_cljs/api.cljs).
 
-Other things:
+Things we don't have but probably should:
 
-1. A new namespace `datomic-cljs.edn` and an accompanying `read-string` might be warranted to support tagged literals like `#db/id`.
-2. Support for REST API-specific things like limiting results.
-3. Browser support. This should be easy enough since platform-specific stuff is confined to `datomic-cljs.http`, but there are other issues (like authentication) to consider.
+1. A new `datomic-cljs.edn` namespace and an accompanying `read-string` to support tagged literals like `#db/id[:db.part/db -1]`.
+2. API support for REST-specific things like limiting the results of query.
+3. For the browser, either some kind of authentication story or a path to one.
+Transaction is currently wide open.
+(This may belong in another library.)
+4. Much better test coverage, including things like malformed input.
 
 ## Development
 
