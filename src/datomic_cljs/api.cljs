@@ -165,6 +165,13 @@
   [db t]
   (update-in db [:implicit-args] assoc :since t))
 
+(defn history
+  "Returns a special database value containing all assertions and
+   retractions across time. This database value can be used with
+   datoms and index-range calls."
+  [db]
+  (update-in db [:implicit-qs] assoc :history true))
+
 (defn limit
   "Returns a value of the database that limits the number of results
    from query and datoms to given number n."
@@ -256,6 +263,13 @@
    supplied, along with optional leading components."
   [db index & {:as components}]
   (-datoms db index components))
+
+(defn index-range
+  "Returns a range of datoms in the given index, starting from start,
+   or the beginning if start is nil, and going to end, or through the
+   end if end is nil."
+  [db index start end]
+  (-datoms db index {:start start :end end}))
 
 ;; TODOs
 (comment
