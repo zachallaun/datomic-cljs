@@ -126,7 +126,13 @@
 
       (test "can narrow raw index data result by specifying components"
         (let [data (<? (d/datoms (d/db conn) :eavt :e 0))]
-          (every? #(= 0 (:e %)) data))))))
+          (every? #(= 0 (:e %)) data)))
+
+      (comment
+        (test "history")
+        (test "index-range"))
+
+      )))
 
 (if http/node-context?
   (let [js-fs (js/require "fs")]
