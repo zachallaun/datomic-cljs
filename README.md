@@ -105,7 +105,9 @@ It returns a core.async channel that will eventually contain either a database c
 For the most part, these are quite similar to their Clojure API counterparts, except that they return core.async channels eventually containing either results or errors.
 (See the [Datomic reference](http://docs.datomic.com/) for more information on what's possible.)
 
-However, `datomic-cljs.api/entity` differs in two ways.
+#### Differences
+
+`datomic-cljs.api/entity` differs in two ways.
 First, its result is eventually just a plain hash-map, in contrast to the Clojure API's lazily-evaluating, hash-map-like Entity object.
 The second difference is a consequence of the first: entity attributes that are refs to other entities will not contain nested entity maps, but instead entity ids.
 This is due to the possibility of circular references.
@@ -119,6 +121,19 @@ To access nested entities, you'll have to pass the entity ids back to `datomic-c
                      :person/friends
                      (map #(d/entity db %)))]
     (<? (first friends))))
+```
+
+#### API Additions
+
+Two database-value functions have been introduced: `datomic-cljs.api/limit` and `datomic-cljs.api/offset`.
+These can be used to (surprise!) limit and offset the results of operations that return potentially large results (like `q` and `datoms`).
+They compose in the same way as the others, so to access my database as of 2012, limiting results to 100 and offsetting by 200, I could do the following.
+
+```clj
+(-> (d/db conn)
+    (d/as-of #inst"2012")
+    (d/limit 100)
+    (d/offset 200))
 ```
 
 ### Error Handling
@@ -156,8 +171,7 @@ For missing pieces of the API, see the bottom of [api.cljs](/src/datomic_cljs/ap
 
 Things we don't have but probably should:
 
-1. API support for REST-specific things like limiting the results of query.
-- For the browser, either some kind of authentication story or a path to one.
+1. For the browser, either some kind of authentication story or a path to one.
 Transaction is currently wide open.
 (This may belong in another library.)
 - Much better test coverage, including things like malformed input.

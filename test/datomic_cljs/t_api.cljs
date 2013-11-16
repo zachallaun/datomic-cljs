@@ -43,15 +43,43 @@
 
     (let [conn (apply d/connect connect-args)
           schema-tx-data (<? (d/transact conn schema))
-          data-tx-data (<? (d/transact conn data))]
+          data-tx-data (<? (d/transact conn data))
+
+          ;; helper queries
+          all-names '[:find ?n :where [?_ :person/name ?n]]]
 
       (test "can transact scheme and data"
         (and (map? schema-tx-data)
              (map? data-tx-data)))
 
       (test "can make simple queries"
-        (let [result (<? (d/q '[:find ?n :where [?_ :person/name ?n]] (d/db conn)))]
+        (let [result (<? (d/q all-names (d/db conn)))]
           (= 3 (count result))))
+
+      (test "can query with inputs"
+        (-> (<? (d/q '[:find ?e :in $ ?n :where [?e :person/name ?n]]
+                     (d/db conn) "Frank"))
+            ffirst
+            number?))
+
+      (test "can limit query results"
+        (let [db (-> (d/db conn)
+                     (d/limit 1))
+              result (<? (d/q all-names db))]
+          (= 1 (count result))))
+
+      (test "can offset query results"
+        (let [db (-> (d/db conn)
+                     (d/offset 1))
+              result (<? (d/q all-names db))]
+          (= 2 (count result))))
+
+      (test "can compose limit/offset"
+        (let [db (-> (d/db conn)
+                     (d/offset 1)
+                     (d/limit 1))
+              result (<? (d/q all-names db))]
+          (= 1 (count result))))
 
       (test "can query with inputs"
         (-> (<? (d/q '[:find ?e :in $ ?n :where [?e :person/name ?n]]

@@ -58,14 +58,16 @@
        (http/request :post path {:edn true
                                  :form {:tx-data tx-data-str}})))))
 
-(defrecord DatomicDB [conn implicit-args]
+(defrecord DatomicDB [conn implicit-args implicit-qs]
   IQueryDatomic
   (-q [_ query inputs]
     (let [args (vec (cons implicit-args inputs))
           path (str (-url-for conn) "/api/query")]
       (http/body
        (http/request :get path {:edn true
-                                :qs {:q (prn-str query) :args (prn-str args)}}))))
+                                :qs (assoc implicit-qs
+                                      :q (prn-str query)
+                                      :args (prn-str args))}))))
 
   IHaveEntities
   (-entity [_ eid]
@@ -136,24 +138,36 @@
 (defn db
   "Creates an abstract Datomic value that can be queried."
   [{:keys [db-alias] :as conn}]
-  (->DatomicDB conn {:db/alias db-alias}))
+  (->DatomicDB conn {:db/alias db-alias} {}))
 
 (defn as-of
   "Returns the value of the database as of some point t, inclusive.
    t can be a transaction number, transaction ID, or inst."
-  [{:keys [conn implicit-args]} t]
-  (->DatomicDB conn (assoc implicit-args :as-of t)))
+  [db t]
+  (update-in db [:implicit-args] assoc :as-of t))
+
+(defn since
+  "Returns the value of the database since some point t, exclusive.
+   t can be a transaction number, transaction ID, or inst."
+  [db t]
+  (update-in db [:implicit-args] assoc :since t))
+
+(defn limit
+  "Returns a value of the database that limits the number of results
+   from query and datoms to given number n."
+  [db n]
+  (update-in db [:implicit-qs] assoc :limit n))
+
+(defn offset
+  "Returns a value of the database that offsets the results of query
+   and datoms by given number n."
+  [db n]
+  (update-in db [:implicit-qs] assoc :offset n))
 
 (defn as-of-t
   "Returns the as-of point, or nil if none."
   [{{as-of :as-of} :implicit-args}]
   as-of)
-
-(defn since
-  "Returns the value of the database since some point t, exclusive.
-   t can be a transaction number, transaction ID, or inst."
-  [{:keys [conn implicit-args]} t]
-  (->DatomicDB conn (assoc implicit-args :since t)))
 
 (defn since-t
   "Returns the since point, or nil if none."
