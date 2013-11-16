@@ -30,11 +30,16 @@
 ;;; Protocols/implementations
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; TODO these protocols are pretty stupid
+
 (defprotocol IQueryDatomic
   (-q [db query inputs]))
 
 (defprotocol IHaveEntities
   (-entity [db eid]))
+
+(defprotocol IDatoms
+  (-datoms [db index components]))
 
 (defprotocol ITransactDatomic
   (-transact [db tx-data-str]))
@@ -68,6 +73,14 @@
                                 :qs (assoc implicit-qs
                                       :q (prn-str query)
                                       :args (prn-str args))}))))
+
+  IDatoms
+  (-datoms [_ index components]
+    (let [path (str (-url-for conn) "/data/" (:db/alias implicit-args) "/-/datoms")]
+      (http/body
+       (http/request :get path {:edn true
+                                :qs (assoc (merge implicit-qs components)
+                                      :index (name index))}))))
 
   IHaveEntities
   (-entity [_ eid]
@@ -238,6 +251,11 @@
     (util/singleton-chan eid)
     (q-ffirst '[:find ?ident :in $ ?e :where [?e :db/ident ?ident]] db eid)))
 
+(defn datoms
+  "Raw access to the index data, by index. The index must be
+   supplied, along with optional leading components."
+  [db index & {:as components}]
+  (-datoms db index components))
 
 ;; TODOs
 (comment

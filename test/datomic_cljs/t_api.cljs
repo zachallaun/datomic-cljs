@@ -118,7 +118,15 @@
           (and (number? eid)
                (= :person/age (<? (d/ident (d/db conn) eid)))))
         (= 12345       (<? (d/entid (d/db conn) 12345)))
-        (= :person/age (<? (d/ident (d/db conn) :person/age)))))))
+        (= :person/age (<? (d/ident (d/db conn) :person/age))))
+
+      (test "can access raw index data with datoms"
+        (-> (<? (d/datoms (d/limit (d/db conn) 10) :eavt))
+            first :e (= 0)))
+
+      (test "can narrow raw index data result by specifying components"
+        (let [data (<? (d/datoms (d/db conn) :eavt :e 0))]
+          (every? #(= 0 (:e %)) data))))))
 
 (if http/node-context?
   (let [js-fs (js/require "fs")]
