@@ -124,12 +124,20 @@
 
 (defn body
   "Expects a response channel, and returns a channel that will
-   eventually contain either an error or the response body."
+   eventually contain either the response body (on successful status
+   code) or an error (if the request fails or an unsuccessful status
+   code was returned)."
   [c-resp]
   (let [c-body (async/chan 1)]
     (go
       (let [resp (<! c-resp)]
-        (if (instance? js/Error resp)
-          (>!x c-body resp)
-          (>!x c-body (:body resp)))))
+        (>!x c-body
+             (cond (instance? js/Error resp)
+                   resp
+
+                   (not (<= 200 (:status resp) 299))
+                   (js/Error. (str "Unsuccessful HTTP status code returned: " (:status resp)))
+
+                   :else
+                   (:body resp)))))
     c-body))

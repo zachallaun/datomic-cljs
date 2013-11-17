@@ -62,6 +62,9 @@
             ffirst
             number?))
 
+      (test "can submit a malformed query without shit totally blowing up"
+        (instance? js/Error (<! (d/q '[] (d/db conn)))))
+
       (test "can limit query results"
         (let [db (-> (d/db conn)
                      (d/limit 1))
