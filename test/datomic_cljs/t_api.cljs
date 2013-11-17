@@ -36,10 +36,10 @@
 
     (test "can create a new database"
       (let [conn (<? (apply d/create-database connect-args))]
-        (satisfies? d/ITransactDatomic conn)))
+        (satisfies? d/IDatomicConnection conn)))
 
     (test "can connect to an existing database"
-      (satisfies? d/ITransactDatomic (apply d/connect connect-args)))
+      (satisfies? d/IDatomicConnection (apply d/connect connect-args)))
 
     (let [conn (apply d/connect connect-args)
           schema-tx-data (<? (d/transact conn schema))
