@@ -178,7 +178,7 @@ Transaction is currently wide open.
 
 ## Development
 
-I've developed a super-awesome testing infrastructure to manage node/browser compatibility.
+I've developed super-awesome testing infrastructure to manage the inherent asynchrony.
 It involves shoving errors into a vector and printing it.
 If the vector's empty, there are no errors and we rejoice.
 
