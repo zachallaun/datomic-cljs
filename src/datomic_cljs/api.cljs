@@ -296,6 +296,9 @@
 
   ;; from datomic.api
 
+  (defn touch
+    [entity])
+
   (defn entid-at
     [db part t-or-date])
 
