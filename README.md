@@ -36,7 +36,7 @@ Add the following dependency your `project.clj`:
     (<! (d/transact conn [[:db/add eid :person/name "Franky"]]))))
 ```
 
-This will query a database for a person named `"Frank"`, changins his name to be `"Franky"`.
+This queries a datomic database for a person named `"Frank"` and changes his name to be `"Franky"`.
 
 ## Using Datomic REST
 
