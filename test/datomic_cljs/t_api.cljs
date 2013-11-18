@@ -131,6 +131,18 @@
         (let [data (<? (d/datoms (d/db conn) :eavt :e 0))]
           (every? #(= 0 (:e %)) data)))
 
+      (test "squuid (probably) conforms to RFC4122"
+        (let [validator (js/RegExp. "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" "i")]
+          (every? identity
+                  (map (fn [_]
+                         (re-matches validator (.-uuid (d/squuid))))
+                       (range 100)))))
+
+      (test "can retrieve millis component of a squuid"
+        (let [seconds (Math/round (/ (.now js/Date) 1000))
+              time-ms (d/squuid-time-millis (d/squuid))]
+          (= seconds (/ time-ms 1000))))
+
       (comment
         (test "history")
         (test "index-range"))
