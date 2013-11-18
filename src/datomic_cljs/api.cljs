@@ -262,15 +262,6 @@
 
   ;; from datomic.api
 
-  (defn datoms
-    [db index & components])
-
-  (defn index-range
-    [db attrid start end])
-
-  (defn history
-    [db])
-
   (defn entid-at
     [db part t-or-date])
 
