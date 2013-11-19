@@ -181,7 +181,6 @@ Things we don't have but probably should:
 
 1. For the browser, some kind of authentication story.
 Transaction is currently wide open.
-
 - Much better test coverage, including tests for things like malformed input.
 
 ## Testing
