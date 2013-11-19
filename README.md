@@ -190,6 +190,8 @@ I've developed super-awesome testing infrastructure to manage the inherent async
 It involves shoving errors into a vector and printing it.
 If the vector's empty, there are no errors and we rejoice.
 
+Assumptions are documented at the top of [t_api.cljs](https://github.com/zachallaun/datomic-cljs/blob/master/test/datomic_cljs/t_api.cljs#L11).
+
 ### Node
 
 ```sh
