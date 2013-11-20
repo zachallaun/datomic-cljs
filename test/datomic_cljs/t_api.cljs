@@ -48,9 +48,13 @@
           ;; helper queries
           all-names '[:find ?n :where [?_ :person/name ?n]]]
 
-      (test "can transact scheme and data"
+      (test "can transact schema and data"
         (and (map? schema-tx-data)
              (map? data-tx-data)))
+
+      (test "successful transactions include actual database values in their result"
+        (satisfies? d/IDatomicDB (:db-before schema-tx-data))
+        (satisfies? d/IDatomicDB (:db-after  schema-tx-data)))
 
       (test "can make simple queries"
         (let [result (<? (d/q all-names (d/db conn)))]
@@ -103,10 +107,10 @@
               [[eid]] (<? (d/q eid-query (d/db conn)))
 
               tx-data [[:db/add eid :person/name "Wilma"]]
-              {{t :basis-t} :db-before} (<? (d/transact conn tx-data))
+              {db-before :db-before} (<? (d/transact conn tx-data))
 
               name-query '[:find ?n :in $ ?e :where [?e :person/name ?n]]
-              before (ffirst (<? (d/q name-query (d/as-of (d/db conn) t) eid)))
+              before (ffirst (<? (d/q name-query db-before eid)))
               after (ffirst (<? (d/q name-query (d/db conn) eid)))]
           (and (= before "Becky")
                (= after "Wilma"))))
@@ -145,9 +149,7 @@
 
       (comment
         (test "history")
-        (test "index-range"))
-
-      )))
+        (test "index-range")))))
 
 (if http/node-context?
   (let [js-fs (js/require "fs")]

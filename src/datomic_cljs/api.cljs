@@ -204,7 +204,15 @@
      :tx-data, the collection of Datums produced by the transaction;
      :tempids, an argument to resolve-tempids."
   [conn tx-data]
-  (-transact conn (if (string? tx-data) tx-data (prn-str tx-data))))
+  (let [f (fn [body]
+            (if (map? body)
+              (assoc body
+                :db-before (as-of (db conn) (get-in body [:db-before :basis-t]))
+                :db-after  (as-of (db conn) (get-in body [:db-after  :basis-t])))
+              body))]
+    (async/map f
+               [(-transact conn (if (string? tx-data) tx-data (prn-str tx-data)))]
+               1)))
 
 (defn q
   "Execute a query against a database value with inputs. Returns a
