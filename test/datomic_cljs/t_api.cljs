@@ -147,6 +147,13 @@
               time-ms (d/squuid-time-millis (d/squuid))]
           (= seconds (/ time-ms 1000))))
 
+      (test "can generate unique tempids"
+        (let [ids (repeatedly 3 #(d/tempid :db.part/user))
+              specs (map #(.-spec %) ids)
+              ns (map second specs)]
+          (and (apply not= specs)
+               (every? #(< % -1000000) ns))))
+
       (comment
         (test "history")
         (test "index-range")))))

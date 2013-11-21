@@ -27,6 +27,17 @@
 
 (reader/register-tag-parser! "db/id" read-dbid)
 
+(let [!next-id (atom -1000001)]
+  (defn tempid
+    "Generate a tempid in the specified partition. Values of n from -1
+     to -1000000, inclusive, are reserved for user-created tempids."
+    ([partition]
+       (let [id (DbId. [partition @!next-id])]
+         (swap! !next-id dec)
+         id))
+    ([partition n]
+       (DbId. [partition n]))))
+
 ;;; Protocols/implementations
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
