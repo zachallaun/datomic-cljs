@@ -35,7 +35,7 @@
 <strong><a href="#using-datomic-rest">Using Datomic REST</a></strong> |
 <strong><a href="#api-overview">API Overview</a></strong> |
 <strong><a href="#limitations">Limitations</a></strong> |
-<strong><a href="#testing">Testing</a></strong></p>
+<strong><a href="#developing">Developing</a></strong></p>
 
 <h1>
 <a name="clojurescript-meet-datomic" class="anchor" href="#clojurescript-meet-datomic"><span class="octicon octicon-link"></span></a>ClojureScript, meet Datomic</h1>
@@ -235,10 +235,9 @@ For missing pieces of the API, see the bottom of <a href="/src/datomic_cljs/api.
 Transaction is currently wide open.</li>
 <li>Much better test coverage, including tests for things like malformed input.</li>
 </ol><h2>
-<a name="testing" class="anchor" href="#testing"><span class="octicon octicon-link"></span></a>Testing</h2>
+<a name="developing" class="anchor" href="#developing"><span class="octicon octicon-link"></span></a>Developing</h2>
 
-<p>I've developed super-awesome testing infrastructure to manage the inherent asynchrony.
-It involves shoving errors into a vector and printing it.
+<p>Testing involves shoving errors into a vector and printing it.
 If the vector's empty, there are no errors and we rejoice.</p>
 
 <p>Assumptions are documented at the top of <a href="https://github.com/zachallaun/datomic-cljs/blob/master/test/datomic_cljs/t_api.cljs#L11">t_api.cljs</a>.</p>
