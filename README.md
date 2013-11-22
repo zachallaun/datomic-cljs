@@ -15,7 +15,7 @@ _**Warning:** This is incomplete, alpha software. Everything is subject to chang
 
 ## Install
 
-Add the following dependency your `project.clj`:
+**Leiningen:**
 
 ```clj
 [com.zachallaun/datomic-cljs "TODO"]
