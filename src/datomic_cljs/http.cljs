@@ -68,7 +68,10 @@
 
 (def ^:private js-request nil)
 (if node-context?
-  (set! js-request (let [req (js/require "request")]
+  (set! js-request (let [req (try (js/require "request")
+                                  (catch js/Error e
+                                    (.log js/console "Error: Cannot find module 'request'.\nSee datomic-cljs README for installation and dependency notes.")
+                                    (.exit js/process 1)))]
                      (fn [opts cb]
                        (req (clj->js opts) cb))))
   (set! js-request browser-request))

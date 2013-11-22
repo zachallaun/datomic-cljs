@@ -15,10 +15,21 @@ _**Warning:** This is incomplete, alpha software. Everything is subject to chang
 
 ## Install
 
-**Leiningen:**
+**Leiningen**
 
 ```clj
-[com.zachallaun/datomic-cljs "TODO"]
+[com.zachallaun/datomic-cljs "0.0.1-alpha-1"]
+```
+
+**npm**
+
+If you're targeting Node, datomic-cljs has an additional dependency.
+Add the following to your `package.json`:
+
+```js
+"dependencies" : {
+  "request" : "2.27.0"
+}
 ```
 
 ## Minimum Viable Snippet
