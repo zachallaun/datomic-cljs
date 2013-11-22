@@ -1,0 +1,263 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>datomic-cljs by zachallaun</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1 class="header">datomic-cljs</h1>
+        <p class="header">A Clojure-like Datomic API for ClojureScript</p>
+
+        <ul>
+          <li class="download"><a class="buttons" href="https://github.com/zachallaun/datomic-cljs/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/zachallaun/datomic-cljs/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/zachallaun/datomic-cljs">View On GitHub</a></li>
+        </ul>
+
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/zachallaun">zachallaun</a></p>
+
+
+      </header>
+      <section>
+        <p><strong><a href="#install">Install</a></strong> |
+<strong><a href="#minimum-viable-snippet">Minimum Viable Snippet</a></strong> |
+<strong><a href="#using-datomic-rest">Using Datomic REST</a></strong> |
+<strong><a href="#api-overview">API Overview</a></strong> |
+<strong><a href="#limitations">Limitations</a></strong> |
+<strong><a href="#testing">Testing</a></strong></p>
+
+<h1>
+<a name="clojurescript-meet-datomic" class="anchor" href="#clojurescript-meet-datomic"><span class="octicon octicon-link"></span></a>ClojureScript, meet Datomic</h1>
+
+<p>datomic-cljs provides an interface to Datomic that is as close as possible to the native <a href="http://docs.datomic.com/clojure/index.html">Clojure API</a>.
+It approximates Clojure's blocking API with <a href="https://github.com/clojure/core.async">core.async</a>.
+It supports both Node.js and modern browsers.</p>
+
+<p><em><strong>Warning:</strong> This is incomplete, alpha software. Everything is subject to change.</em></p>
+
+<h2>
+<a name="install" class="anchor" href="#install"><span class="octicon octicon-link"></span></a>Install</h2>
+
+<p><strong>Leiningen:</strong></p>
+
+<div class="highlight highlight-clj"><pre><span class="p">[</span><span class="nv">com.zachallaun/datomic-cljs</span> <span class="s">"TODO"</span><span class="p">]</span>
+</pre></div>
+
+<h2>
+<a name="minimum-viable-snippet" class="anchor" href="#minimum-viable-snippet"><span class="octicon octicon-link"></span></a>Minimum Viable Snippet</h2>
+
+<div class="highlight highlight-clj"><pre><span class="p">(</span><span class="kd">ns </span><span class="nv">example</span>
+  <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">datomic-cljs.api</span> <span class="ss">:as</span> <span class="nv">d</span><span class="p">]</span>
+            <span class="p">[</span><span class="nv">cljs.core.async</span> <span class="ss">:refer</span> <span class="p">[</span><span class="nv">&lt;!</span><span class="p">]])</span>
+  <span class="p">(</span><span class="ss">:require-macros</span> <span class="p">[</span><span class="nv">cljs.core.async.macros</span> <span class="ss">:refer</span> <span class="p">[</span><span class="nv">go</span><span class="p">]]))</span>
+
+<span class="p">(</span><span class="nf">go</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">conn</span> <span class="p">(</span><span class="nf">d/connect</span> <span class="s">"localhost"</span> <span class="mi">9898</span> <span class="s">"local"</span> <span class="s">"friends"</span><span class="p">)</span>
+        <span class="nv">eid</span> <span class="p">(</span><span class="nb">ffirst </span><span class="p">(</span><span class="nf">&lt;!</span> <span class="p">(</span><span class="nf">d/q</span> <span class="o">'</span><span class="p">[</span><span class="ss">:find</span> <span class="nv">?e</span> <span class="ss">:where</span> <span class="p">[</span><span class="nv">?e</span> <span class="ss">:person/name</span> <span class="s">"Frank"</span><span class="p">]]</span>
+                             <span class="p">(</span><span class="nf">d/db</span> <span class="nv">conn</span><span class="p">))))]</span>
+    <span class="p">(</span><span class="nf">&lt;!</span> <span class="p">(</span><span class="nf">d/transact</span> <span class="nv">conn</span> <span class="p">[[</span><span class="ss">:db/add</span> <span class="nv">eid</span> <span class="ss">:person/name</span> <span class="s">"Franky"</span><span class="p">]]))))</span>
+</pre></div>
+
+<p>This queries a datomic database for a person named <code>"Frank"</code> and changes his name to be <code>"Franky"</code>.</p>
+
+<h2>
+<a name="using-datomic-rest" class="anchor" href="#using-datomic-rest"><span class="octicon octicon-link"></span></a>Using Datomic REST</h2>
+
+<p>datomic-cljs talks to a Datomic database through the Datomic REST service.
+Datomic REST is a standalone server that sits in front of a transactor and exposes Datomic through HTTP.</p>
+
+<p>For the sake of these examples, I'll assume that you're using <a href="https://my.datomic.com/downloads/free">Datomic Free</a> and that you have a <code>DATOMIC_HOME</code> environment variable set, pointing to the directory of your peer library.</p>
+
+<p>First, start a transactor.</p>
+
+<div class="highlight highlight-sh"><pre><span class="nv">$ $DATOMIC_HOME</span>/bin/transactor <span class="nv">$DATOMIC_HOME</span>/config/samples/free-transactor-template.properties
+</pre></div>
+
+<p>By default, this will start a Datomic Free transactor at <code>datomic:free://localhost:4334/</code>.
+With a transactor in place, you can start the Datomic REST service.
+If you're planning to use datomic-cljs in the browser, you'll have to include the <code>--origins</code> flag to specify allowed origins for cross-origin resource sharing.
+If you're planning to use datomic-cljs on node, <code>--origins</code> can be omitted from the following.</p>
+
+<div class="highlight highlight-sh"><pre><span class="nv">$ $DATOMIC_HOME</span>/bin/rest --port 9898 --origins http://0.0.0.0:8000 <span class="nb">local </span>datomic:free://localhost:4334/
+</pre></div>
+
+<p>The <code>rest</code> script accepts repeated alias/transactor pairs.
+<code>local</code> is an alias that specifies your transactor.</p>
+
+<p>Once you have the service running, you can visit http://localhost:9898 in your browser to see documentation for the REST API and interact with the service through web forms.</p>
+
+<h2>
+<a name="api-overview" class="anchor" href="#api-overview"><span class="octicon octicon-link"></span></a>API Overview</h2>
+
+<p>In general, datomic-cljs exposes the same API as its Clojure counterpart.
+But, where the Clojure library would block awaiting a result to communicate, datomic-cljs returns a core.async channel.
+To learn more about core.async, I recommend David Nolen's article <a href="http://swannodette.github.io/2013/07/12/communicating-sequential-processes/">Communicating Sequential Processes</a> and the <a href="http://clojure.github.io/core.async/">core.async API documentation</a>.</p>
+
+<p>See <a href="/examples/friends.cljs">examples/friends.cljs</a> for an example of much of what follows.</p>
+
+<h3>
+<a name="namespaces-of-interest" class="anchor" href="#namespaces-of-interest"><span class="octicon octicon-link"></span></a>Namespaces of Interest</h3>
+
+<div class="highlight highlight-clj"><pre><span class="p">(</span><span class="kd">defn </span><span class="nv">example</span>
+  <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">datomic-cljs.api</span> <span class="ss">:as</span> <span class="nv">d</span><span class="p">])</span>
+  <span class="p">(</span><span class="ss">:require-macros</span> <span class="p">[</span><span class="nv">datomic-cljs.macros</span> <span class="ss">:refer</span> <span class="p">[</span><span class="nv">&lt;?</span><span class="p">]]))</span>
+</pre></div>
+
+<p>Everything exciting happens in <code>datomic-cljs.api</code>, with the exception of the single <code>&lt;?</code> macro from <code>datomic-cljs.macros</code>.
+(See <a href="#error-handling">Error Handling</a> for information on <code>&lt;?</code>.)</p>
+
+<h3>
+<a name="creating-and-connecting-to-databases" class="anchor" href="#creating-and-connecting-to-databases"><span class="octicon octicon-link"></span></a>Creating and Connecting to Databases</h3>
+
+<h4>
+<a name="create-a-connection-to-an-existing-database" class="anchor" href="#create-a-connection-to-an-existing-database"><span class="octicon octicon-link"></span></a>Create a connection to an existing database</h4>
+
+<div class="highlight highlight-clj"><pre><span class="p">(</span><span class="k">def </span><span class="nv">conn</span> <span class="p">(</span><span class="nf">d/connect</span> <span class="s">"localhost"</span> <span class="c1">;; hostname of your running REST service</span>
+                     <span class="mi">9898</span>        <span class="c1">;; port</span>
+                     <span class="s">"local"</span>     <span class="c1">;; transactor alias</span>
+                     <span class="s">"friends"</span><span class="p">))</span> <span class="c1">;; database name</span>
+</pre></div>
+
+<p>This returns a core.async channel that will contain either a database connection or an error.</p>
+
+<h4>
+<a name="create-a-database" class="anchor" href="#create-a-database"><span class="octicon octicon-link"></span></a>Create a database</h4>
+
+<div class="highlight highlight-clj"><pre><span class="p">(</span><span class="nf">go</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">conn</span> <span class="p">(</span><span class="nf">&lt;?</span> <span class="p">(</span><span class="nf">d/create-database</span> <span class="s">"localhost"</span> <span class="mi">9898</span> <span class="s">"local"</span> <span class="s">"friends"</span><span class="p">))]</span>
+    <span class="nv">...</span><span class="p">))</span>
+</pre></div>
+
+<p>Accepts the same arguments as <code>connect</code>, but will attempt to create a new database, connecting to it if it already exists.
+This returns a core.async channel that will contain either a database connection or an error.</p>
+
+<h3>
+<a name="database-values-query-entity-and-transactions" class="anchor" href="#database-values-query-entity-and-transactions"><span class="octicon octicon-link"></span></a>Database Values, Query, Entity, and Transactions</h3>
+
+<p>For the most part, these are quite similar to their Clojure API counterparts, except that they return c
+ore.async channels eventually containing either results or errors.
+(See the <a href="http://docs.datomic.com/">Datomic reference</a> for more information on what's possible.)</p>
+
+<h4>
+<a name="differences" class="anchor" href="#differences"><span class="octicon octicon-link"></span></a>Differences</h4>
+
+<h5>
+<a name="datomic-cljsapientity" class="anchor" href="#datomic-cljsapientity"><span class="octicon octicon-link"></span></a><code>datomic-cljs.api/entity</code>
+</h5>
+
+<p>This function differs in two ways.
+Its result is just a plain hash-map, in contrast to the Clojure API's lazily-evaluating, hash-map-like Entity object.
+Attributes in the Entity that are refs to other entities will not contain nested entity maps.  Instead, they will contain entity ids.
+This avoids circular references.
+To access nested entities, you'll have to pass the entity ids back to <code>datomic-cljs.api/entity</code>.</p>
+
+<div class="highlight highlight-clj"><pre><span class="p">(</span><span class="nf">go</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">db</span> <span class="p">(</span><span class="nf">d/db</span> <span class="nv">conn</span><span class="p">)</span>
+        <span class="p">[[</span><span class="nv">eid</span><span class="p">]]</span> <span class="p">(</span><span class="nf">&lt;?</span> <span class="p">(</span><span class="nf">d/q</span> <span class="o">'</span><span class="p">[</span><span class="ss">:find</span> <span class="nv">?e</span> <span class="ss">:where</span> <span class="p">[</span><span class="nv">?e</span> <span class="ss">:person/name</span> <span class="s">"Caroll"</span><span class="p">]]</span> <span class="nv">db</span><span class="p">))</span>
+        <span class="nv">friends</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="p">(</span><span class="nf">&lt;?</span> <span class="p">(</span><span class="nf">d/entity</span> <span class="nv">db</span> <span class="nv">eid</span><span class="p">))</span>
+                     <span class="ss">:person/friends</span>
+                     <span class="p">(</span><span class="nb">map </span><span class="o">#</span><span class="p">(</span><span class="nf">d/entity</span> <span class="nv">db</span> <span class="nv">%</span><span class="p">)))]</span>
+    <span class="p">(</span><span class="nf">&lt;?</span> <span class="p">(</span><span class="nb">first </span><span class="nv">friends</span><span class="p">))))</span>
+</pre></div>
+
+<h5>
+<a name="datomic-cljsapilimit" class="anchor" href="#datomic-cljsapilimit"><span class="octicon octicon-link"></span></a><code>datomic-cljs.api/limit</code>
+</h5>
+
+<p>Added.
+This limits the results to a certain number.
+It composes in the same way as the other query operations.</p>
+
+<h5>
+<a name="datomic-cljsapioffset" class="anchor" href="#datomic-cljsapioffset"><span class="octicon octicon-link"></span></a><code>datomic-cljs.api/offset</code>
+</h5>
+
+<p>Added.
+This begins returning results at a certain number.
+It composes in the same way as the other query operations.</p>
+
+<h3>
+<a name="error-handling" class="anchor" href="#error-handling"><span class="octicon octicon-link"></span></a>Error Handling</h3>
+
+<p>Errors are put directly on return channels.
+To keep from wrapping each parking take in a conditional, <code>datomic-cljs.macros/&lt;?</code> is introduced.
+Instead of <code>cljs.core.async/&lt;!</code>, use <code>datomic-cljs.macros/&lt;?</code> to take from channels.
+If a <code>js/Error</code> is taken, it will be thrown.
+Here's the Minimum Viable Snippet rewritten to handle errors:</p>
+
+<div class="highlight highlight-clj"><pre><span class="p">(</span><span class="kd">ns </span><span class="nv">example</span>
+  <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">datomic-cljs.api</span> <span class="ss">:as</span> <span class="nv">d</span><span class="p">]</span>
+            <span class="p">[</span><span class="nv">cljs.core.async</span> <span class="ss">:refer</span> <span class="p">[</span><span class="nv">&lt;!</span><span class="p">]])</span>
+  <span class="p">(</span><span class="ss">:require-macros</span> <span class="p">[</span><span class="nv">cljs.core.async.macros</span> <span class="ss">:refer</span> <span class="p">[</span><span class="nv">go</span><span class="p">]]</span>
+                   <span class="p">[</span><span class="nv">datomic-cljs.macros</span> <span class="ss">:refer</span> <span class="p">[</span><span class="nv">&lt;?</span><span class="p">]]))</span>
+
+<span class="p">(</span><span class="nf">go</span>
+  <span class="p">(</span><span class="nf">try</span>
+    <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">conn</span> <span class="p">(</span><span class="nf">d/connect</span> <span class="s">"localhost"</span> <span class="mi">9898</span> <span class="s">"local"</span> <span class="s">"friends"</span><span class="p">)</span>
+          <span class="nv">eid</span> <span class="p">(</span><span class="nb">ffirst </span><span class="p">(</span><span class="nf">&lt;?</span> <span class="p">(</span><span class="nf">d/q</span> <span class="o">'</span><span class="p">[</span><span class="ss">:find</span> <span class="nv">?e</span> <span class="ss">:where</span> <span class="p">[</span><span class="nv">?e</span> <span class="ss">:person/name</span> <span class="s">"Frank"</span><span class="p">]]</span>
+                               <span class="p">(</span><span class="nf">d/db</span> <span class="nv">conn</span><span class="p">))))]</span>
+      <span class="p">(</span><span class="nf">&lt;?</span> <span class="p">(</span><span class="nf">d/transact</span> <span class="nv">conn</span> <span class="p">[[</span><span class="ss">:db/add</span> <span class="nv">eid</span> <span class="ss">:person/name</span> <span class="s">"Franky"</span><span class="p">]])))</span>
+    <span class="p">(</span><span class="nf">catch</span> <span class="nv">js/Error</span> <span class="nv">e</span>
+      <span class="p">(</span><span class="nb">println </span><span class="s">"Something went wrong!"</span><span class="p">))))</span>
+</pre></div>
+
+<h2>
+<a name="limitations" class="anchor" href="#limitations"><span class="octicon octicon-link"></span></a>Limitations</h2>
+
+<p>There's work left to be done.
+For missing pieces of the API, see the bottom of <a href="/src/datomic_cljs/api.cljs">api.cljs</a>.</p>
+
+<p>Things we don't have but probably should:</p>
+
+<ol>
+<li>For the browser, some kind of authentication story.
+Transaction is currently wide open.</li>
+<li>Much better test coverage, including tests for things like malformed input.</li>
+</ol><h2>
+<a name="testing" class="anchor" href="#testing"><span class="octicon octicon-link"></span></a>Testing</h2>
+
+<p>I've developed super-awesome testing infrastructure to manage the inherent asynchrony.
+It involves shoving errors into a vector and printing it.
+If the vector's empty, there are no errors and we rejoice.</p>
+
+<p>Assumptions are documented at the top of <a href="https://github.com/zachallaun/datomic-cljs/blob/master/test/datomic_cljs/t_api.cljs#L11">t_api.cljs</a>.</p>
+
+<h3>
+<a name="node" class="anchor" href="#node"><span class="octicon octicon-link"></span></a>Node</h3>
+
+<div class="highlight highlight-sh"><pre><span class="nv">$ </span>lein cljsbuild once
+<span class="nv">$ </span>node target/test.js
+</pre></div>
+
+<h3>
+<a name="browser" class="anchor" href="#browser"><span class="octicon octicon-link"></span></a>Browser</h3>
+
+<div class="highlight highlight-sh"><pre><span class="nv">$ </span>lein cljsbuild once
+<span class="nv">$ </span>python -m SimpleHTTPServer 8000 <span class="c"># then visit 0.0.0.0:8000</span>
+</pre></div>
+
+<p>This will serve the project root.
+Navigate to the index, which will include the browser tests, and open the console to see the results.</p>
+
+<p><em>Note:</em> You may see nasty CORS-related errors in the browser tests.
+They're unavoidable.</p>
+      </section>
+      <footer>
+        <p><small>Hosted on <a href="http://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+		
+  </body>
+</html>
