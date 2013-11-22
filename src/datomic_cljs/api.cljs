@@ -318,6 +318,9 @@
   (defn touch
     [entity])
 
+  (defn filter
+    [db pred])
+
   (defn entid-at
     [db part t-or-date])
 
