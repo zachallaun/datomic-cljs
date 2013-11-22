@@ -4,10 +4,10 @@
   :license {:name "MIT" :url "http://opensource.org/licenses/MIT"}
 
   :dependencies [[org.clojure/clojure "1.5.1"]
-                 [org.clojure/clojurescript "0.0-2030"]
+                 [org.clojure/clojurescript "0.0-2069"]
                  [org.clojure/core.async "0.1.256.0-1bf8cf-alpha"]]
 
-  :profiles {:dev {:plugins [[lein-cljsbuild "1.0.0-alpha2"]]}}
+  :profiles {:dev {:plugins [[lein-cljsbuild "1.0.0"]]}}
 
   :cljsbuild {:builds {:test
                        {:source-paths ["src" "test"]
