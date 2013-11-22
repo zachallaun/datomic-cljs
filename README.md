@@ -3,7 +3,7 @@
 **[Using Datomic REST](#using-datomic-rest)** |
 **[API Overview](#api-overview)** |
 **[Limitations](#limitations)** |
-**[Testing](#testing)**
+**[Developing](#developing)**
 
 # ClojureScript, meet Datomic
 
@@ -194,10 +194,9 @@ Things we don't have but probably should:
 Transaction is currently wide open.
 - Much better test coverage, including tests for things like malformed input.
 
-## Testing
+## Developing
 
-I've developed super-awesome testing infrastructure to manage the inherent asynchrony.
-It involves shoving errors into a vector and printing it.
+Testing involves shoving errors into a vector and printing it.
 If the vector's empty, there are no errors and we rejoice.
 
 Assumptions are documented at the top of [t_api.cljs](https://github.com/zachallaun/datomic-cljs/blob/master/test/datomic_cljs/t_api.cljs#L11).
