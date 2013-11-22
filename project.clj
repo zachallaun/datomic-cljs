@@ -1,4 +1,4 @@
-(defproject com.zachallaun/datomic-cljs "0.0.1-SNAPSHOT"
+(defproject com.zachallaun/datomic-cljs "0.0.1-alpha-1"
   :description "Datomic REST client for ClojureScript"
   :url "https://github.com/zachallaun/datomic-cljs"
   :license {:name "MIT" :url "http://opensource.org/licenses/MIT"}
