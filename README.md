@@ -40,14 +40,14 @@ Add the following to your `package.json`:
             [cljs.core.async :refer [<!]])
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
+;; Find the entity ID associated with a person named "Frank".
+;; Change his name to be "Franky".
 (go
   (let [conn (d/connect "localhost" 9898 "local" "friends")
-        eid (ffirst (<! (d/q '[:find ?e :where [?e :person/name "Frank"]]
-                             (d/db conn))))]
+        [[eid]] (<! (d/q '[:find ?e :where [?e :person/name "Frank"]]
+                         (d/db conn)))]
     (<! (d/transact conn [[:db/add eid :person/name "Franky"]]))))
 ```
-
-This queries a datomic database for a person named `"Frank"` and changes his name to be `"Franky"`.
 
 ## Using Datomic REST
 
@@ -136,6 +136,8 @@ This avoids circular references.
 To access nested entities, you'll have to pass the entity ids back to `datomic-cljs.api/entity`.
 
 ```clj
+;; Find an entity whose name is "Caroll".
+;; Get all of her friend entities asynchronously, parking on the first.
 (go
   (let [db (d/db conn)
         [[eid]] (<? (d/q '[:find ?e :where [?e :person/name "Caroll"]] db))
@@ -172,11 +174,14 @@ Here's the Minimum Viable Snippet rewritten to handle errors:
   (:require-macros [cljs.core.async.macros :refer [go]]
                    [datomic-cljs.macros :refer [<?]]))
 
+;; Find the entity ID associated with a person named "Frank".
+;; Change his name to be "Franky".
+;; If any async operation returns an error, rethrow it!
 (go
   (try
     (let [conn (d/connect "localhost" 9898 "local" "friends")
-          eid (ffirst (<? (d/q '[:find ?e :where [?e :person/name "Frank"]]
-                               (d/db conn))))]
+          [[eid]] (<? (d/q '[:find ?e :where [?e :person/name "Frank"]]
+                           (d/db conn)))]
       (<? (d/transact conn [[:db/add eid :person/name "Franky"]])))
     (catch js/Error e
       (println "Something went wrong!"))))
