@@ -224,7 +224,7 @@ They're unavoidable.
 [clojure-api]: http://docs.datomic.com/clojure/index.html
 [core.async]: https://github.com/clojure/core.async
 [datomic-free]: https://my.datomic.com/downloads/free
-[csp]: http://swanndette.github.io/2013/07/12/communicating-sequential-processes/
+[csp]: http://swannodette.github.io/2013/07/12/communicating-sequential-processes/
 [core.async-docs]: http://clojure.github.io/core.async/
 [datomic-reference]: http://docs.datomic.com/
 [t-api-notes]: https://github.com/zachallaun/datomic-cljs/blob/master/test/datomic_cljs/t_api.cljs#L11
