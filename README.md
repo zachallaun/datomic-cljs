@@ -122,8 +122,7 @@ This returns a core.async channel that will contain either a database connection
 
 ### Database Values, Query, Entity, and Transactions
 
-For the most part, these are quite similar to their Clojure API counterparts, except that they return c
-ore.async channels eventually containing either results or errors.
+For the most part, these are quite similar to their Clojure API counterparts, except that they return core.async channels eventually containing either results or errors.
 (See the [Datomic reference][datomic-reference] for more information on what's possible.)
 
 #### Differences
