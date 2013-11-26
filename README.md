@@ -7,8 +7,8 @@
 
 # ClojureScript, meet Datomic
 
-datomic-cljs provides an interface to Datomic that is as close as possible to the native [Clojure API](http://docs.datomic.com/clojure/index.html).
-It approximates Clojure's blocking API with [core.async](https://github.com/clojure/core.async).
+datomic-cljs provides an interface to Datomic that is as close as possible to the native [Clojure API][clojure-api].
+It approximates Clojure's blocking API with [core.async][core.async].
 It supports both Node.js and modern browsers.
 
 _**Warning:** This is incomplete, alpha software. Everything is subject to change._
@@ -54,7 +54,7 @@ This queries a datomic database for a person named `"Frank"` and changes his nam
 datomic-cljs talks to a Datomic database through the Datomic REST service.
 Datomic REST is a standalone server that sits in front of a transactor and exposes Datomic through HTTP.
 
-For the sake of these examples, I'll assume that you're using [Datomic Free](https://my.datomic.com/downloads/free) and that you have a `DATOMIC_HOME` environment variable set, pointing to the directory of your peer library.
+For the sake of these examples, I'll assume that you're using [Datomic Free][datomic-free] and that you have a `DATOMIC_HOME` environment variable set, pointing to the directory of your peer library.
 
 First, start a transactor.
 
@@ -80,7 +80,7 @@ Once you have the service running, you can visit http://localhost:9898 in your b
 
 In general, datomic-cljs exposes the same API as its Clojure counterpart.
 But, where the Clojure library would block awaiting a result to communicate, datomic-cljs returns a core.async channel.
-To learn more about core.async, I recommend David Nolen's article [Communicating Sequential Processes](http://swannodette.github.io/2013/07/12/communicating-sequential-processes/) and the [core.async API documentation](http://clojure.github.io/core.async/).
+To learn more about core.async, I recommend David Nolen's article [Communicating Sequential Processes][csp] and the [core.async API documentation][core.async-docs].
 
 See [examples/friends.cljs](/examples/friends.cljs) for an example of much of what follows.
 
@@ -124,7 +124,7 @@ This returns a core.async channel that will contain either a database connection
 
 For the most part, these are quite similar to their Clojure API counterparts, except that they return c
 ore.async channels eventually containing either results or errors.
-(See the [Datomic reference](http://docs.datomic.com/) for more information on what's possible.)
+(See the [Datomic reference][datomic-reference] for more information on what's possible.)
 
 #### Differences
 
@@ -199,7 +199,7 @@ Transaction is currently wide open.
 Testing involves shoving errors into a vector and printing it.
 If the vector's empty, there are no errors and we rejoice.
 
-Assumptions are documented at the top of [t_api.cljs](https://github.com/zachallaun/datomic-cljs/blob/master/test/datomic_cljs/t_api.cljs#L11).
+Assumptions are documented at the top of [t_api.cljs][t-api-notes].
 
 ### Node
 
@@ -220,3 +220,11 @@ Navigate to the index, which will include the browser tests, and open the consol
 
 _Note:_ You may see nasty CORS-related errors in the browser tests.
 They're unavoidable.
+
+[clojure-api]: http://docs.datomic.com/clojure/index.html
+[core.async]: https://github.com/clojure/core.async
+[datomic-free]: https://my.datomic.com/downloads/free
+[csp]: http://swanndette.github.io/2013/07/12/communicating-sequential-processes/
+[core.async-docs]: http://clojure.github.io/core.async/
+[datomic-reference]: http://docs.datomic.com/
+[t-api-notes]: https://github.com/zachallaun/datomic-cljs/blob/master/test/datomic_cljs/t_api.cljs#L11
