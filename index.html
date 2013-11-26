@@ -72,14 +72,14 @@ Add the following to your <code>package.json</code>:</p>
             <span class="p">[</span><span class="nv">cljs.core.async</span> <span class="ss">:refer</span> <span class="p">[</span><span class="nv">&lt;!</span><span class="p">]])</span>
   <span class="p">(</span><span class="ss">:require-macros</span> <span class="p">[</span><span class="nv">cljs.core.async.macros</span> <span class="ss">:refer</span> <span class="p">[</span><span class="nv">go</span><span class="p">]]))</span>
 
+<span class="c1">;; Find the entity ID associated with a person named "Frank".</span>
+<span class="c1">;; Change his name to be "Franky".</span>
 <span class="p">(</span><span class="nf">go</span>
   <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">conn</span> <span class="p">(</span><span class="nf">d/connect</span> <span class="s">"localhost"</span> <span class="mi">9898</span> <span class="s">"local"</span> <span class="s">"friends"</span><span class="p">)</span>
-        <span class="nv">eid</span> <span class="p">(</span><span class="nb">ffirst </span><span class="p">(</span><span class="nf">&lt;!</span> <span class="p">(</span><span class="nf">d/q</span> <span class="o">'</span><span class="p">[</span><span class="ss">:find</span> <span class="nv">?e</span> <span class="ss">:where</span> <span class="p">[</span><span class="nv">?e</span> <span class="ss">:person/name</span> <span class="s">"Frank"</span><span class="p">]]</span>
-                             <span class="p">(</span><span class="nf">d/db</span> <span class="nv">conn</span><span class="p">))))]</span>
+        <span class="p">[[</span><span class="nv">eid</span><span class="p">]]</span> <span class="p">(</span><span class="nf">&lt;!</span> <span class="p">(</span><span class="nf">d/q</span> <span class="o">'</span><span class="p">[</span><span class="ss">:find</span> <span class="nv">?e</span> <span class="ss">:where</span> <span class="p">[</span><span class="nv">?e</span> <span class="ss">:person/name</span> <span class="s">"Frank"</span><span class="p">]]</span>
+                         <span class="p">(</span><span class="nf">d/db</span> <span class="nv">conn</span><span class="p">)))]</span>
     <span class="p">(</span><span class="nf">&lt;!</span> <span class="p">(</span><span class="nf">d/transact</span> <span class="nv">conn</span> <span class="p">[[</span><span class="ss">:db/add</span> <span class="nv">eid</span> <span class="ss">:person/name</span> <span class="s">"Franky"</span><span class="p">]]))))</span>
 </pre></div>
-
-<p>This queries a datomic database for a person named <code>"Frank"</code> and changes his name to be <code>"Franky"</code>.</p>
 
 <h2>
 <a name="using-datomic-rest" class="anchor" href="#using-datomic-rest"><span class="octicon octicon-link"></span></a>Using Datomic REST</h2>
@@ -155,8 +155,7 @@ This returns a core.async channel that will contain either a database connection
 <h3>
 <a name="database-values-query-entity-and-transactions" class="anchor" href="#database-values-query-entity-and-transactions"><span class="octicon octicon-link"></span></a>Database Values, Query, Entity, and Transactions</h3>
 
-<p>For the most part, these are quite similar to their Clojure API counterparts, except that they return c
-ore.async channels eventually containing either results or errors.
+<p>For the most part, these are quite similar to their Clojure API counterparts, except that they return core.async channels eventually containing either results or errors.
 (See the <a href="http://docs.datomic.com/">Datomic reference</a> for more information on what's possible.)</p>
 
 <h4>
@@ -172,7 +171,9 @@ Attributes in the Entity that are refs to other entities will not contain nested
 This avoids circular references.
 To access nested entities, you'll have to pass the entity ids back to <code>datomic-cljs.api/entity</code>.</p>
 
-<div class="highlight highlight-clj"><pre><span class="p">(</span><span class="nf">go</span>
+<div class="highlight highlight-clj"><pre><span class="c1">;; Find an entity whose name is "Caroll".</span>
+<span class="c1">;; Get all of her friend entities asynchronously, parking on the first.</span>
+<span class="p">(</span><span class="nf">go</span>
   <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">db</span> <span class="p">(</span><span class="nf">d/db</span> <span class="nv">conn</span><span class="p">)</span>
         <span class="p">[[</span><span class="nv">eid</span><span class="p">]]</span> <span class="p">(</span><span class="nf">&lt;?</span> <span class="p">(</span><span class="nf">d/q</span> <span class="o">'</span><span class="p">[</span><span class="ss">:find</span> <span class="nv">?e</span> <span class="ss">:where</span> <span class="p">[</span><span class="nv">?e</span> <span class="ss">:person/name</span> <span class="s">"Caroll"</span><span class="p">]]</span> <span class="nv">db</span><span class="p">))</span>
         <span class="nv">friends</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="p">(</span><span class="nf">&lt;?</span> <span class="p">(</span><span class="nf">d/entity</span> <span class="nv">db</span> <span class="nv">eid</span><span class="p">))</span>
@@ -212,11 +213,14 @@ Here's the Minimum Viable Snippet rewritten to handle errors:</p>
   <span class="p">(</span><span class="ss">:require-macros</span> <span class="p">[</span><span class="nv">cljs.core.async.macros</span> <span class="ss">:refer</span> <span class="p">[</span><span class="nv">go</span><span class="p">]]</span>
                    <span class="p">[</span><span class="nv">datomic-cljs.macros</span> <span class="ss">:refer</span> <span class="p">[</span><span class="nv">&lt;?</span><span class="p">]]))</span>
 
+<span class="c1">;; Find the entity ID associated with a person named "Frank".</span>
+<span class="c1">;; Change his name to be "Franky".</span>
+<span class="c1">;; If any async operation returns an error, rethrow it!</span>
 <span class="p">(</span><span class="nf">go</span>
   <span class="p">(</span><span class="nf">try</span>
     <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">conn</span> <span class="p">(</span><span class="nf">d/connect</span> <span class="s">"localhost"</span> <span class="mi">9898</span> <span class="s">"local"</span> <span class="s">"friends"</span><span class="p">)</span>
-          <span class="nv">eid</span> <span class="p">(</span><span class="nb">ffirst </span><span class="p">(</span><span class="nf">&lt;?</span> <span class="p">(</span><span class="nf">d/q</span> <span class="o">'</span><span class="p">[</span><span class="ss">:find</span> <span class="nv">?e</span> <span class="ss">:where</span> <span class="p">[</span><span class="nv">?e</span> <span class="ss">:person/name</span> <span class="s">"Frank"</span><span class="p">]]</span>
-                               <span class="p">(</span><span class="nf">d/db</span> <span class="nv">conn</span><span class="p">))))]</span>
+          <span class="p">[[</span><span class="nv">eid</span><span class="p">]]</span> <span class="p">(</span><span class="nf">&lt;?</span> <span class="p">(</span><span class="nf">d/q</span> <span class="o">'</span><span class="p">[</span><span class="ss">:find</span> <span class="nv">?e</span> <span class="ss">:where</span> <span class="p">[</span><span class="nv">?e</span> <span class="ss">:person/name</span> <span class="s">"Frank"</span><span class="p">]]</span>
+                           <span class="p">(</span><span class="nf">d/db</span> <span class="nv">conn</span><span class="p">)))]</span>
       <span class="p">(</span><span class="nf">&lt;?</span> <span class="p">(</span><span class="nf">d/transact</span> <span class="nv">conn</span> <span class="p">[[</span><span class="ss">:db/add</span> <span class="nv">eid</span> <span class="ss">:person/name</span> <span class="s">"Franky"</span><span class="p">]])))</span>
     <span class="p">(</span><span class="nf">catch</span> <span class="nv">js/Error</span> <span class="nv">e</span>
       <span class="p">(</span><span class="nb">println </span><span class="s">"Something went wrong!"</span><span class="p">))))</span>
